@@ -1,6 +1,6 @@
 services:
   stats-server:
-    build: ./ewm-stats-service/ewm-stats-server
+    build: ./stats-service/ewm-stats-server
     ports:
       - "9090:9090"
     depends_on:
@@ -18,7 +18,7 @@ services:
       - POSTGRES_PASSWORD=pass
 
   ewm-service:
-    build: ./ewm-main-service
+    build: ./core/main-service
     ports:
       - "8080:8080"
     depends_on:

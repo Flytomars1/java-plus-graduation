@@ -20,7 +20,7 @@
 	<modules>
 		<module>infra</module>
 		<module>core</module>
-		<module>ewm-stats-service</module>
+		<module>stats-service</module>
 	</modules>
 
 	<properties>
