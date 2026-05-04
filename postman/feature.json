@@ -1,0 +1,2339 @@
+{
+  "info": {
+    "_postman_id": "67802f51-abf0-46e3-94a4-718473d091df",
+    "name": "feature",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19895025",
+    "_collection_link": "https://cjm888.postman.co/workspace/cjm-Workspace~67e3236f-5abb-4e16-87f5-9c0c39c428df/collection/19895025-67802f51-abf0-46e3-94a4-718473d091df?action=share&source=collection_link&creator=19895025"
+  },
+  "item": [
+    {
+      "name": "Create rating like",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус код 201 Created\", function() {\r",
+              "    pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "const eventId = pm.collectionVariables.get(\"eventId\");\r",
+              "const participantId = pm.collectionVariables.get(\"participantId\");\r",
+              "const baseUrl = pm.collectionVariables.get(\"baseUrl\") || pm.variables.get(\"baseUrl\") || \"http://localhost:8080\";\r",
+              "\r",
+              "const checkRating = {\r",
+              "    url: `${baseUrl}/events/${eventId}/rating`,\r",
+              "    method: 'GET'\r",
+              "};\r",
+              "\r",
+              "pm.sendRequest(checkRating, function(err, response) {\r",
+              "    if (err) {\r",
+              "        return;\r",
+              "    }\r",
+              "    \r",
+              "    if (response.code === 200) {\r",
+              "        const rating = response.json();\r",
+              "        console.log(`Текущий рейтинг события:`);\r",
+              "        console.log(`   • Лайки: ${rating.likes}`);\r",
+              "        console.log(`   • Дизлайки: ${rating.dislikes}`);\r",
+              "        console.log(`   • Всего: ${rating.total}`);\r",
+              "        console.log(`   • Рейтинг: ${rating.score}%`);\r",
+              "        \r",
+              "        pm.test(\"Лайк добавлен в рейтинг\", function() {\r",
+              "            pm.expect(rating.likes).to.equal(1);\r",
+              "            pm.expect(rating.total).to.equal(1);\r",
+              "        });\r",
+              "    }\r",
+              "});\r",
+              "\r",
+              "const checkUserRating = {\r",
+              "    url: `${baseUrl}/users/${participantId}/ratings/${eventId}`,\r",
+              "    method: 'GET'\r",
+              "};\r",
+              "\r",
+              "pm.sendRequest(checkUserRating, function(err, response) {\r",
+              "    if (err) {\r",
+              "        console.error('Ошибка при проверке оценки пользователя:', err);\r",
+              "        return;\r",
+              "    }\r",
+              "    \r",
+              "    if (response.code === 200) {\r",
+              "        const userRating = response.json();\r",
+              "        const ratingText = userRating === true ? 'ЛАЙК' : \r",
+              "                          userRating === false ? 'ДИЗЛАЙК' : \r",
+              "                          'НЕТ ОЦЕНКИ';\r",
+              "        console.log(`Оценка пользователя: ${ratingText}`);\r",
+              "        \r",
+              "        pm.test(\"Пользователь поставил лайк\", function() {\r",
+              "            pm.expect(userRating).to.be.true;\r",
+              "        });\r",
+              "    } else if (response.code === 404) {\r",
+              "        console.log('Оценка пользователя не найдена');\r",
+              "    }\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) {\r",
+              "        this.pm = pm;\r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080';\r",
+              "    }\r",
+              "\r",
+              "    async request(method, endpoint, body = null, headers = {}) {\r",
+              "        const defaultHeaders = {\r",
+              "            'Content-Type': 'application/json'\r",
+              "        };\r",
+              "\r",
+              "        const requestConfig = {\r",
+              "            url: `${this.baseUrl}${endpoint}`,\r",
+              "            method: method,\r",
+              "            header: { ...defaultHeaders, ...headers }\r",
+              "        };\r",
+              "\r",
+              "        if (body) {\r",
+              "            requestConfig.body = {\r",
+              "                mode: 'raw',\r",
+              "                raw: JSON.stringify(body)\r",
+              "            };\r",
+              "        }\r",
+              "\r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(requestConfig, (err, response) => {\r",
+              "                if (err) {\r",
+              "                    reject(err);\r",
+              "                } else {\r",
+              "                    resolve(response);\r",
+              "                }\r",
+              "            });\r",
+              "        });\r",
+              "    }\r",
+              "\r",
+              "    async createUser(userData) {\r",
+              "        const response = await this.request('POST', '/admin/users', userData);\r",
+              "        if (response.code === 201) {\r",
+              "            ;\r",
+              "            return response.json();\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async createCategory(name) {\r",
+              "        const response = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (response.code === 201) {\r",
+              "            return response.json();\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const response = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "\r",
+              "        if (response.code === 201) {\r",
+              "            return response.json();\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async publishEvent(eventId) {\r",
+              "        const response = await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "        if (response.code === 200) {\r",
+              "            return response.json();\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async createParticipationRequest(userId, eventId) {\r",
+              "        const response = await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`, null);\r",
+              "        if (response.code === 201) {\r",
+              "            const requestData = response.json();\r",
+              "            return requestData;\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async checkRequestStatus(userId) {\r",
+              "        const response = await this.request('GET', `/users/${userId}/requests`);\r",
+              "        if (response.code === 200) {\r",
+              "            return response.json();\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async rateEvent(userId, eventId, isLike) {\r",
+              "        const response = await this.request('POST', `/users/${userId}/ratings`, {\r",
+              "            eventId: eventId,\r",
+              "            isLike: isLike\r",
+              "        });\r",
+              "        if (response.code === 201) {\r",
+              "            return response;\r",
+              "        } else {\r",
+              "            throw new Error(`Ошибка оценки события: ${response.status} - ${response.text()}`);\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async getEventRating(eventId) {\r",
+              "        const response = await this.request('GET', `/events/${eventId}/rating`);\r",
+              "        if (response.code === 200) {\r",
+              "            return response.json();\r",
+              "        }\r",
+              "    }\r",
+              "\r",
+              "    async getUserRating(userId, eventId) {\r",
+              "        const response = await this.request('GET', `/users/${userId}/ratings/${eventId}`);\r",
+              "        if (response.code === 200) {\r",
+              "            return response.json();\r",
+              "        }\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "class RandomUtils {\r",
+              "    constructor() {\r",
+              "        this.timestamp = Date.now();\r",
+              "        this.counter = 0;\r",
+              "    }\r",
+              "\r",
+              "    getRandomEmail() {\r",
+              "        this.counter++;\r",
+              "        return `test${this.timestamp}${this.counter}@mail.com`;\r",
+              "    }\r",
+              "\r",
+              "    getRandomName(prefix) {\r",
+              "        this.counter++;\r",
+              "        return `${prefix} ${this.timestamp}-${this.counter}`;\r",
+              "    }\r",
+              "\r",
+              "    getUser(prefix = 'User') {\r",
+              "        return {\r",
+              "            name: this.getRandomName(prefix),\r",
+              "            email: this.getRandomEmail()\r",
+              "        };\r",
+              "    }\r",
+              "\r",
+              "    getEvent(categoryId, titlePrefix = 'Event') {\r",
+              "        this.counter++;\r",
+              "\r",
+              "        const now = new Date();\r",
+              "        const tomorrow = new Date(now);\r",
+              "        tomorrow.setDate(tomorrow.getDate() + 1);\r",
+              "\r",
+              "        const year = tomorrow.getFullYear();\r",
+              "        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');\r",
+              "        const day = String(tomorrow.getDate()).padStart(2, '0');\r",
+              "\r",
+              "        const eventDate = `${year}-${month}-${day} 12:00:00`;\r",
+              "\r",
+              "        return {\r",
+              "            annotation: `Тестовое событие ${this.counter} для проверки рейтингов`,\r",
+              "            description: `Описание тестового события ${this.counter}. Создано автоматически.`,\r",
+              "            title: `${titlePrefix} ${this.counter}`,\r",
+              "            category: categoryId,\r",
+              "            eventDate: eventDate,\r",
+              "            location: {\r",
+              "                lat: 55.7558,\r",
+              "                lon: 37.6173\r",
+              "            },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        };\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "const main = async () => {\r",
+              "\r",
+              "    const api = new API(pm);\r",
+              "    const random = new RandomUtils();\r",
+              "\r",
+              "    try {\r",
+              "        const organizer = await api.createUser(random.getUser('Организатор'));\r",
+              "        const participant = await api.createUser(random.getUser('Участник'));\r",
+              "\r",
+              "        pm.collectionVariables.set('organizerId', organizer.id);\r",
+              "        pm.collectionVariables.set('participantId', participant.id);\r",
+              "\r",
+              "        const category = await api.createCategory(`Тестовая категория ${random.timestamp}`);\r",
+              "        pm.collectionVariables.set('categoryId', category.id);\r",
+              "\r",
+              "        const event = await api.createEvent(\r",
+              "            organizer.id,\r",
+              "            random.getEvent(category.id, 'Тест рейтинга')\r",
+              "        );\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "\r",
+              "        await api.publishEvent(event.id);\r",
+              "\r",
+              "        const participationRequest = await api.createParticipationRequest(participant.id, event.id);\r",
+              "        pm.collectionVariables.set('requestId', participationRequest.id);\r",
+              "\r",
+              "        const userRequests = await api.checkRequestStatus(participant.id);\r",
+              "        const userRequest = userRequests.find(r => r.event === event.id);\r",
+              "\r",
+              "\r",
+              "        const mainRequestBody = {\r",
+              "            eventId: event.id,\r",
+              "            isLike: true\r",
+              "        };\r",
+              "\r",
+              "        pm.request.body = {\r",
+              "            mode: 'raw',\r",
+              "            raw: JSON.stringify(mainRequestBody)\r",
+              "        };\r",
+              "\r",
+              "        const requestUrl = `${api.baseUrl}/users/${participant.id}/ratings`;\r",
+              "        pm.request.url = {\r",
+              "            raw: requestUrl,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['users', String(participant.id), 'ratings']\r",
+              "        };\r",
+              "\r",
+              "    } catch (error) {\r",
+              "        throw error;\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "const interval = setInterval(() => { }, 1000);\r",
+              "\r",
+              "setTimeout(async () => {\r",
+              "    try {\r",
+              "        await main();\r",
+              "    } catch (error) {\r",
+              "        console.error('Критическая ошибка:', error);\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    } finally {\r",
+              "        clearInterval(interval);\r",
+              "    }\r",
+              "}, 100);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"eventId\": {{eventId}},\r\n  \"isLike\": true\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create dislike",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус код 201 Created\", function() {\r",
+              "    pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "const eventId = pm.collectionVariables.get(\"eventId\");\r",
+              "const participantId = pm.collectionVariables.get(\"participantId\");\r",
+              "const baseUrl = pm.collectionVariables.get(\"baseUrl\") || pm.variables.get(\"baseUrl\") || \"http://localhost:8080\";\r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: `${baseUrl}/events/${eventId}/rating`,\r",
+              "    method: 'GET'\r",
+              "}, (err, response) => {\r",
+              "    if (response && response.code === 200) {\r",
+              "        const rating = response.json();\r",
+              "        pm.test(\"Дизлайк добавлен в рейтинг\", function() {\r",
+              "            pm.expect(rating.dislikes).to.equal(1);\r",
+              "            pm.expect(rating.total).to.equal(1);\r",
+              "        });\r",
+              "    }\r",
+              "});\r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: `${baseUrl}/users/${participantId}/ratings/${eventId}`,\r",
+              "    method: 'GET'\r",
+              "}, (err, response) => {\r",
+              "    if (response && response.code === 200) {\r",
+              "        const userRating = response.json();\r",
+              "        pm.test(\"Пользователь поставил дизлайк\", function() {\r",
+              "            pm.expect(userRating).to.be.false;\r",
+              "        });\r",
+              "    }\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { this.pm = pm; this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { url: `${this.baseUrl}${endpoint}`, method, \r",
+              "            header: {'Content-Type': 'application/json'} };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => err ? reject(err) : resolve(res));\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(userData) {\r",
+              "        const res = await this.request('POST', '/admin/users', userData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async publishEvent(eventId) {\r",
+              "        const res = await this.request('PATCH', `/admin/events/${eventId}`, \r",
+              "            { stateAction: 'PUBLISH_EVENT' });\r",
+              "        if (res.code === 200) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createParticipationRequest(userId, eventId) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`, null);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "const random = {\r",
+              "    counter: 0,\r",
+              "    getEmail: () => `test${Date.now()}${random.counter++}@mail.com`,\r",
+              "    getName: (prefix) => `${prefix} ${Date.now()}-${random.counter}`,\r",
+              "    getUser: (prefix = 'User') => ({ name: random.getName(prefix), email: random.getEmail() }),\r",
+              "    getEvent: (categoryId) => {\r",
+              "        const tomorrow = new Date(Date.now() + 86400000);\r",
+              "        const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')} 12:00:00`;\r",
+              "        return {\r",
+              "            annotation: 'Тест рейтинга',\r",
+              "            description: 'Тестовое событие',\r",
+              "            title: 'Тест событие',\r",
+              "            category: categoryId,\r",
+              "            eventDate: date,\r",
+              "            location: { lat: 55.7558, lon: 37.6173 },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        };\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    \r",
+              "    try {\r",
+              "        const organizer = await api.createUser(random.getUser('Организатор'));\r",
+              "        const participant = await api.createUser(random.getUser('Участник'));\r",
+              "        const category = await api.createCategory('Тест категория');\r",
+              "        const event = await api.createEvent(organizer.id, random.getEvent(category.id));\r",
+              "        await api.publishEvent(event.id);\r",
+              "        await api.createParticipationRequest(participant.id, event.id);\r",
+              "        \r",
+              "        pm.collectionVariables.set('participantId', participant.id);\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "        \r",
+              "        pm.request.body = {\r",
+              "            mode: 'raw',\r",
+              "            raw: JSON.stringify({ eventId: event.id, isLike: false })\r",
+              "        };\r",
+              "        \r",
+              "        pm.request.url = {\r",
+              "            raw: `${api.baseUrl}/users/${participant.id}/ratings`,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['users', String(participant.id), 'ratings']\r",
+              "        };\r",
+              "        \r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"eventId\": {{eventId}},\r\n  \"isLike\": false\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Change like to dislike",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Статус код 201 Created\", function() {\r",
+              "    pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "const eventId = pm.collectionVariables.get(\"eventId\");\r",
+              "const participantId = pm.collectionVariables.get(\"participantId\");\r",
+              "const baseUrl = pm.collectionVariables.get(\"baseUrl\") || pm.variables.get(\"baseUrl\") || \"http://localhost:8080\";\r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: `${baseUrl}/users/${participantId}/ratings/${eventId}`,\r",
+              "    method: 'GET'\r",
+              "}, (err, response) => {\r",
+              "    if (response && response.code === 200) {\r",
+              "        const userRating = response.json();\r",
+              "        pm.test(\"Оценка изменена на дизлайк\", function() {\r",
+              "            pm.expect(userRating).to.be.false;\r",
+              "        });\r",
+              "    }\r",
+              "});\r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: `${baseUrl}/events/${eventId}/rating`,\r",
+              "    method: 'GET'\r",
+              "}, (err, response) => {\r",
+              "    if (response && response.code === 200) {\r",
+              "        const rating = response.json();\r",
+              "        pm.test(\"В рейтинге только дизлайки\", function() {\r",
+              "            pm.expect(rating.likes).to.equal(0);\r",
+              "            pm.expect(rating.dislikes).to.equal(1);\r",
+              "        });\r",
+              "    }\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { this.pm = pm; this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { url: `${this.baseUrl}${endpoint}`, method, \r",
+              "            header: {'Content-Type': 'application/json'} };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => err ? reject(err) : resolve(res));\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(userData) {\r",
+              "        const res = await this.request('POST', '/admin/users', userData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async publishEvent(eventId) {\r",
+              "        const res = await this.request('PATCH', `/admin/events/${eventId}`, \r",
+              "            { stateAction: 'PUBLISH_EVENT' });\r",
+              "        if (res.code === 200) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createParticipationRequest(userId, eventId) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`, null);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async rateEvent(userId, eventId, isLike) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/ratings`, \r",
+              "            { eventId, isLike });\r",
+              "        if (res.code === 201) return res;\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "const random = {\r",
+              "    counter: 0,\r",
+              "    getEmail: () => `test${Date.now()}${this.counter++}@mail.com`,\r",
+              "    getName: (prefix) => `${prefix} ${Date.now()}-${this.counter}`,\r",
+              "    getUser: (prefix = 'User') => ({ name: this.getName(prefix), email: this.getEmail() }),\r",
+              "    getEvent: (categoryId) => {\r",
+              "        const tomorrow = new Date(Date.now() + 86400000);\r",
+              "        const date = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')} 12:00:00`;\r",
+              "        return {\r",
+              "            annotation: 'Тест смены оценки',\r",
+              "            description: 'Тестовое событие',\r",
+              "            title: 'Смена оценки',\r",
+              "            category: categoryId,\r",
+              "            eventDate: date,\r",
+              "            location: { lat: 55.7558, lon: 37.6173 },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        };\r",
+              "    }\r",
+              "};\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    \r",
+              "    try {\r",
+              "        const organizer = await api.createUser(random.getUser('Организатор'));\r",
+              "        const participant = await api.createUser(random.getUser('Участник'));\r",
+              "        const category = await api.createCategory('Тест категория');\r",
+              "        const event = await api.createEvent(organizer.id, random.getEvent(category.id));\r",
+              "        await api.publishEvent(event.id);\r",
+              "        await api.createParticipationRequest(participant.id, event.id);\r",
+              "        \r",
+              "        await api.rateEvent(participant.id, event.id, true);\r",
+              "        \r",
+              "        pm.collectionVariables.set('participantId', participant.id);\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "        \r",
+              "        pm.request.body = {\r",
+              "            mode: 'raw',\r",
+              "            raw: JSON.stringify({ eventId: event.id, isLike: false })\r",
+              "        };\r",
+              "        \r",
+              "        pm.request.url = {\r",
+              "            raw: `${api.baseUrl}/users/${participant.id}/ratings`,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['users', String(participant.id), 'ratings']\r",
+              "        };\r",
+              "        \r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"eventId\": {{eventId}},\r\n  \"isLike\": false\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Rate own event",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ошибка 409 Conflict\", function() {\r",
+              "    pm.response.to.have.status(409);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Сообщение: 'Cannot rate own event'\", function() {\r",
+              "    const responseText = pm.response.text();\r",
+              "    \r",
+              "    const hasError = responseText.includes('Cannot rate own event');\r",
+              "    \r",
+              "    pm.expect(hasError).to.be.true;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { \r",
+              "        this.pm = pm; \r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; \r",
+              "    }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { \r",
+              "            url: `${this.baseUrl}${endpoint}`, \r",
+              "            method: method, \r",
+              "            header: {'Content-Type': 'application/json'} \r",
+              "        };\r",
+              "        \r",
+              "        if (body) {\r",
+              "            config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        }\r",
+              "        \r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => {\r",
+              "                if (err) reject(err);\r",
+              "                else resolve(res);\r",
+              "            });\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(userData) {\r",
+              "        const res = await this.request('POST', '/admin/users', userData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async publishEvent(eventId) {\r",
+              "        const res = await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "        if (res.code === 200) return res.json();\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "    \r",
+              "    try {\r",
+              "        const organizer = await api.createUser({ \r",
+              "            name: `Организатор ${timestamp}`, \r",
+              "            email: `org${timestamp}@test.com` \r",
+              "        });\r",
+              "        \r",
+              "        const category = await api.createCategory(`Категория ${timestamp}`);\r",
+              "        \r",
+              "        const futureDate = new Date(Date.now() + (2 * 24 * 60 * 60 * 1000));\r",
+              "        const eventDate = `${futureDate.getFullYear()}-${String(futureDate.getMonth()+1).padStart(2,'0')}-${String(futureDate.getDate()).padStart(2,'0')} 12:00:00`;\r",
+              "        \r",
+              "        const event = await api.createEvent(organizer.id, {\r",
+              "            annotation: `Событие организатора ${timestamp}`,\r",
+              "            description: `Тест оценки своего события`,\r",
+              "            title: `Мое событие ${timestamp}`,\r",
+              "            category: category.id,\r",
+              "            eventDate: eventDate,\r",
+              "            location: { lat: 55.7558, lon: 37.6173 },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        });\r",
+              "        \r",
+              "        await api.publishEvent(event.id);\r",
+              "        \r",
+              "        pm.collectionVariables.set('organizerId', organizer.id);\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "        \r",
+              "        pm.request.body = {\r",
+              "            mode: 'raw',\r",
+              "            raw: JSON.stringify({ eventId: event.id, isLike: true })\r",
+              "        };\r",
+              "        \r",
+              "        pm.request.url = {\r",
+              "            raw: `${api.baseUrl}/users/${organizer.id}/ratings`,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['users', String(organizer.id), 'ratings']\r",
+              "        };\r",
+              "        \r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"eventId\": {{eventId}},\r\n  \"isLike\": false\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Rate unpublished event",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ошибка 409 Conflict\", function() {\r",
+              "    pm.response.to.have.status(409);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Сообщение: 'Cannot rate unpublished event'\", function() {\r",
+              "    const responseText = pm.response.text();\r",
+              "    const hasError = responseText.includes('Cannot rate unpublished');\r",
+              "    \r",
+              "    pm.expect(hasError).to.be.true;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { \r",
+              "        this.pm = pm; \r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; \r",
+              "    }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { \r",
+              "            url: `${this.baseUrl}${endpoint}`, \r",
+              "            method, \r",
+              "            header: {'Content-Type': 'application/json'} \r",
+              "        };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => err ? reject(err) : resolve(res));\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(userData) {\r",
+              "        const res = await this.request('POST', '/admin/users', userData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createParticipationRequest(userId, eventId) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`, null);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "    \r",
+              "    try {\r",
+              "        const organizer = await api.createUser({ \r",
+              "            name: `Организатор ${timestamp}`, \r",
+              "            email: `org${timestamp}@test.com` \r",
+              "        });\r",
+              "        const participant = await api.createUser({ \r",
+              "            name: `Участник ${timestamp}`, \r",
+              "            email: `part${timestamp}@test.com` \r",
+              "        });\r",
+              "        \r",
+              "        const category = await api.createCategory(`Категория ${timestamp}`);\r",
+              "        \r",
+              "        const futureDate = new Date(Date.now() + (2 * 24 * 60 * 60 * 1000));\r",
+              "        const eventDate = `${futureDate.getFullYear()}-${String(futureDate.getMonth()+1).padStart(2,'0')}-${String(futureDate.getDate()).padStart(2,'0')} 12:00:00`;\r",
+              "        \r",
+              "        const event = await api.createEvent(organizer.id, {\r",
+              "            annotation: `Неопубликованное событие ${timestamp}`,\r",
+              "            description: `Тест оценки неопубликованного события`,\r",
+              "            title: `Неопубликованное ${timestamp}`,\r",
+              "            category: category.id,\r",
+              "            eventDate: eventDate,\r",
+              "            location: { lat: 55.7558, lon: 37.6173 },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        });\r",
+              "        \r",
+              "        await api.createParticipationRequest(participant.id, event.id);\r",
+              "        \r",
+              "        pm.collectionVariables.set('participantId', participant.id);\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "        \r",
+              "        pm.request.body = {\r",
+              "            mode: 'raw',\r",
+              "            raw: JSON.stringify({ eventId: event.id, isLike: true })\r",
+              "        };\r",
+              "        \r",
+              "        pm.request.url = {\r",
+              "            raw: `${api.baseUrl}/users/${participant.id}/ratings`,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['users', String(participant.id), 'ratings']\r",
+              "        };\r",
+              "        \r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"eventId\": {{eventId}},\r\n  \"isLike\": false\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Rate event without participationg",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ошибка 409 Conflict\", function() {\r",
+              "    pm.response.to.have.status(409);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Сообщение: 'Must have participated'\", function() {\r",
+              "    const responseText = pm.response.text();\r",
+              "    \r",
+              "    const hasError = responseText.includes('Must have participated');\r",
+              "    \r",
+              "    pm.expect(hasError).to.be.true;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { \r",
+              "        this.pm = pm; \r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; \r",
+              "    }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { \r",
+              "            url: `${this.baseUrl}${endpoint}`, \r",
+              "            method, \r",
+              "            header: {'Content-Type': 'application/json'} \r",
+              "        };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => err ? reject(err) : resolve(res));\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(userData) {\r",
+              "        const res = await this.request('POST', '/admin/users', userData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "    \r",
+              "    async publishEvent(eventId) {\r",
+              "        const res = await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "        if (res.code === 200) return res.json();\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "    \r",
+              "    try {\r",
+              "        const organizer = await api.createUser({ \r",
+              "            name: `Организатор ${timestamp}`, \r",
+              "            email: `org${timestamp}@test.com` \r",
+              "        });\r",
+              "        const participant = await api.createUser({ \r",
+              "            name: `Участник ${timestamp}`, \r",
+              "            email: `part${timestamp}@test.com` \r",
+              "        });\r",
+              "        \r",
+              "        const category = await api.createCategory(`Категория ${timestamp}`);\r",
+              "        \r",
+              "        const futureDate = new Date(Date.now() + (2 * 24 * 60 * 60 * 1000));\r",
+              "        const eventDate = `${futureDate.getFullYear()}-${String(futureDate.getMonth()+1).padStart(2,'0')}-${String(futureDate.getDate()).padStart(2,'0')} 12:00:00`;\r",
+              "        \r",
+              "        const event = await api.createEvent(organizer.id, {\r",
+              "            annotation: `Событие без участия ${timestamp}`,\r",
+              "            description: `Тест оценки без участия`,\r",
+              "            title: `Без участия ${timestamp}`,\r",
+              "            category: category.id,\r",
+              "            eventDate: eventDate,\r",
+              "            location: { lat: 55.7558, lon: 37.6173 },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        });\r",
+              "        \r",
+              "        await api.publishEvent(event.id);\r",
+              "\r",
+              "        pm.collectionVariables.set('participantId', participant.id);\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "        \r",
+              "        pm.request.body = {\r",
+              "            mode: 'raw',\r",
+              "            raw: JSON.stringify({ eventId: event.id, isLike: true })\r",
+              "        };\r",
+              "        \r",
+              "        pm.request.url = {\r",
+              "            raw: `${api.baseUrl}/users/${participant.id}/ratings`,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['users', String(participant.id), 'ratings']\r",
+              "        };\r",
+              "        \r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"eventId\": {{eventId}},\r\n  \"isLike\": true\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Rate non exist event",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ошибка 404 Not Found\", function() {\r",
+              "    pm.response.to.have.status(404);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Сообщение: 'not found'\", function() {\r",
+              "    const responseText = pm.response.text();\r",
+              "    const hasError = responseText.includes('not found');\r",
+              "    \r",
+              "    pm.expect(hasError).to.be.true;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "(async () => {\r",
+              "    const timestamp = Date.now();\r",
+              "    \r",
+              "    try {\r",
+              "        const createUser = {\r",
+              "            url: `${pm.variables.get('baseUrl') || 'http://localhost:8080'}/admin/users`,\r",
+              "            method: 'POST',\r",
+              "            header: {'Content-Type': 'application/json'},\r",
+              "            body: { mode: 'raw', raw: JSON.stringify({ \r",
+              "                name: `Участник ${timestamp}`, \r",
+              "                email: `part${timestamp}@test.com` \r",
+              "            })}\r",
+              "        };\r",
+              "        \r",
+              "        return new Promise((resolve) => {\r",
+              "            pm.sendRequest(createUser, (err, res) => {\r",
+              "                if (res && res.code === 201) {\r",
+              "                    const participant = res.json();\r",
+              "                    \r",
+              "                    pm.collectionVariables.set('participantId', participant.id);\r",
+              "                    \r",
+              "                    const fakeEventId = 999999;\r",
+              "                    \r",
+              "                    pm.request.body = {\r",
+              "                        mode: 'raw',\r",
+              "                        raw: JSON.stringify({ eventId: fakeEventId, isLike: true })\r",
+              "                    };\r",
+              "                    \r",
+              "                    pm.request.url = {\r",
+              "                        raw: `${pm.variables.get('baseUrl') || 'http://localhost:8080'}/users/${participant.id}/ratings`,\r",
+              "                        host: [pm.variables.get('baseUrl') || 'http://localhost:8080'],\r",
+              "                        path: ['users', String(participant.id), 'ratings']\r",
+              "                    };\r",
+              "                }\r",
+              "                resolve();\r",
+              "            });\r",
+              "        });\r",
+              "        \r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"eventId\": {{eventId}},\r\n  \"isLike\": true\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get rating",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Успешный ответ 200 OK\", function() {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Ответ содержит все поля RatingDto\", function() {\r",
+              "    const rating = pm.response.json();\r",
+              "    \r",
+              "    pm.expect(rating).to.have.all.keys([\r",
+              "        'score', 'likes', 'dislikes', 'total'\r",
+              "    ]);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Корректный расчет рейтинга\", function() {\r",
+              "    const rating = pm.response.json();\r",
+              "    \r",
+              "    pm.expect(rating.likes).to.equal(2);\r",
+              "    pm.expect(rating.dislikes).to.equal(1);\r",
+              "    pm.expect(rating.total).to.equal(3);\r",
+              "    \r",
+              "    pm.expect(rating.score).to.equal(67);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Score в диапазоне 0-100\", function() {\r",
+              "    const rating = pm.response.json();\r",
+              "    pm.expect(rating.score).to.be.at.least(0);\r",
+              "    pm.expect(rating.score).to.be.at.most(100);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) {\r",
+              "        this.pm = pm;\r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080';\r",
+              "    }\r",
+              "\r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = {\r",
+              "            url: `${this.baseUrl}${endpoint}`,\r",
+              "            method,\r",
+              "            header: { 'Content-Type': 'application/json' }\r",
+              "        };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => err ? reject(err) : resolve(res));\r",
+              "        });\r",
+              "    }\r",
+              "\r",
+              "    async createUser(userData) {\r",
+              "        const res = await this.request('POST', '/admin/users', userData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async publishEvent(eventId) {\r",
+              "        const res = await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "        if (res.code === 200) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async createParticipationRequest(userId, eventId) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`, null);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async rateEvent(userId, eventId, isLike) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/ratings`, { eventId, isLike });\r",
+              "        if (res.code === 201) return res;\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "\r",
+              "    try {\r",
+              "        const organizer = await api.createUser({\r",
+              "            name: `Организатор ${timestamp}`,\r",
+              "            email: `org${timestamp}@test.com`\r",
+              "        });\r",
+              "        const participants = await Promise.all([\r",
+              "            api.createUser({ name: `Участник1 ${timestamp}`, email: `part1${timestamp}@test.com` }),\r",
+              "            api.createUser({ name: `Участник2 ${timestamp}`, email: `part2${timestamp}@test.com` }),\r",
+              "            api.createUser({ name: `Участник3 ${timestamp}`, email: `part3${timestamp}@test.com` })\r",
+              "        ]);\r",
+              "\r",
+              "        const category = await api.createCategory(`Категория ${timestamp}`);\r",
+              "\r",
+              "        const futureDate = new Date(Date.now() + (2 * 24 * 60 * 60 * 1000));\r",
+              "        const eventDate = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')} 12:00:00`;\r",
+              "\r",
+              "        const event = await api.createEvent(organizer.id, {\r",
+              "            annotation: `Событие для теста рейтинга ${timestamp}`,\r",
+              "            description: `Тест расчета рейтинга 67%`,\r",
+              "            title: `Рейтинг 67% тест ${timestamp}`,\r",
+              "            category: category.id,\r",
+              "            eventDate: eventDate,\r",
+              "            location: { lat: 55.7558, lon: 37.6173 },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        });\r",
+              "\r",
+              "        await api.publishEvent(event.id);\r",
+              "\r",
+              "        await Promise.all(participants.map(p => api.createParticipationRequest(p.id, event.id)));\r",
+              "\r",
+              "        await api.rateEvent(participants[0].id, event.id, true);\r",
+              "        await api.rateEvent(participants[1].id, event.id, true);\r",
+              "        await api.rateEvent(participants[2].id, event.id, false);\r",
+              "\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "\r",
+              "        pm.request.method = 'GET';\r",
+              "        pm.request.body = undefined;\r",
+              "\r",
+              "        pm.request.url = {\r",
+              "            raw: `${api.baseUrl}/events/${event.id}/rating`,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['events', String(event.id), 'rating']\r",
+              "        };\r",
+              "\r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get rating non exist event",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Ошибка 404 Not Found\", function() {\r",
+              "    pm.response.to.have.status(404);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Сообщение: 'not found'\", function() {\r",
+              "    const responseText = pm.response.text();\r",
+              "    const hasError = responseText.includes('not found');\r",
+              "    pm.expect(hasError).to.be.true;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "(async () => {\r",
+              "    const fakeEventId = 999999;\r",
+              "    \r",
+              "    pm.collectionVariables.set('fakeEventId', fakeEventId);\r",
+              "    \r",
+              "    pm.request.method = 'GET';\r",
+              "    pm.request.body = undefined;\r",
+              "    \r",
+              "    pm.request.url = {\r",
+              "        raw: `${pm.variables.get('baseUrl') || 'http://localhost:8080'}/events/${fakeEventId}/rating`,\r",
+              "        host: [pm.variables.get('baseUrl') || 'http://localhost:8080'],\r",
+              "        path: ['events', String(fakeEventId), 'rating']\r",
+              "    };\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get users rating",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) {\r",
+              "        this.pm = pm;\r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080';\r",
+              "    }\r",
+              "\r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = {\r",
+              "            url: `${this.baseUrl}${endpoint}`,\r",
+              "            method,\r",
+              "            header: { 'Content-Type': 'application/json' }\r",
+              "        };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => err ? reject(err) : resolve(res));\r",
+              "        });\r",
+              "    }\r",
+              "\r",
+              "    async createUser(userData) {\r",
+              "        const res = await this.request('POST', '/admin/users', userData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async publishEvent(eventId) {\r",
+              "        const res = await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "        if (res.code === 200) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async createParticipationRequest(userId, eventId) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`, null);\r",
+              "        if (res.code === 201) return res.json();\r",
+              "    }\r",
+              "\r",
+              "    async rateEvent(userId, eventId, isLike) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/ratings`, { eventId, isLike });\r",
+              "        if (res.code === 201) return res;\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "\r",
+              "    try {\r",
+              "        const organizer = await api.createUser({\r",
+              "            name: `Организатор ${timestamp}`,\r",
+              "            email: `org${timestamp}@test.com`\r",
+              "        });\r",
+              "        const participant = await api.createUser({\r",
+              "            name: `Участник ${timestamp}`,\r",
+              "            email: `part${timestamp}@test.com`\r",
+              "        });\r",
+              "\r",
+              "        const category = await api.createCategory(`Категория ${timestamp}`);\r",
+              "\r",
+              "        const futureDate = new Date(Date.now() + (2 * 24 * 60 * 60 * 1000));\r",
+              "        const eventDate = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')} 12:00:00`;\r",
+              "\r",
+              "        const event = await api.createEvent(organizer.id, {\r",
+              "            annotation: `Событие для теста оценки пользователя ${timestamp}`,\r",
+              "            description: `Тест получения оценки пользователя`,\r",
+              "            title: `Оценка пользователя ${timestamp}`,\r",
+              "            category: category.id,\r",
+              "            eventDate: eventDate,\r",
+              "            location: { lat: 55.7558, lon: 37.6173 },\r",
+              "            paid: false,\r",
+              "            participantLimit: 0,\r",
+              "            requestModeration: false\r",
+              "        });\r",
+              "\r",
+              "        await api.publishEvent(event.id);\r",
+              "\r",
+              "        await api.createParticipationRequest(participant.id, event.id);\r",
+              "        await api.rateEvent(participant.id, event.id, true);\r",
+              "\r",
+              "        pm.collectionVariables.set('participantId', participant.id);\r",
+              "        pm.collectionVariables.set('eventId', event.id);\r",
+              "        pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "\r",
+              "        pm.request.method = 'GET';\r",
+              "        pm.request.body = undefined;\r",
+              "\r",
+              "        pm.request.url = {\r",
+              "            raw: `${api.baseUrl}/users/${participant.id}/ratings/${event.id}`,\r",
+              "            host: [api.baseUrl],\r",
+              "            path: ['users', String(participant.id), 'ratings', String(event.id)]\r",
+              "        };\r",
+              "    } catch (error) {\r",
+              "        pm.collectionVariables.set('prepError', error.message);\r",
+              "    }\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Успешный ответ 200 OK\", function() {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Пользователь поставил лайк (true)\", function() {\r",
+              "    const userRating = pm.response.json();\r",
+              "    pm.expect(userRating).to.be.true;\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings/{{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings",
+            "{{eventId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete user rating",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Успешное удаление: 204 No Content\", function() {\r",
+              "    pm.response.to.have.status(204);\r",
+              "});\r",
+              "\r",
+              "const eventId = pm.collectionVariables.get(\"eventId\");\r",
+              "const participantId = pm.collectionVariables.get(\"participantId\");\r",
+              "const baseUrl = pm.collectionVariables.get(\"baseUrl\") || pm.variables.get(\"baseUrl\") || \"http://localhost:8080\";\r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: `${baseUrl}/users/${participantId}/ratings/${eventId}`,\r",
+              "    method: 'GET'\r",
+              "}, (err, response) => {\r",
+              "    if (response && response.code === 200) {\r",
+              "        const userRating = response.json();\r",
+              "        pm.test(\"Оценка удалена\", function() {\r",
+              "            pm.expect(userRating).to.be.null;\r",
+              "        });\r",
+              "    } else if (response && response.code === 404) {\r",
+              "        pm.test(\"Оценка не найдена (удалена)\", function() {\r",
+              "            pm.expect(true).to.be.true;\r",
+              "        });\r",
+              "    }\r",
+              "});\r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: `${baseUrl}/events/${eventId}/rating`,\r",
+              "    method: 'GET'\r",
+              "}, (err, response) => {\r",
+              "    if (response && response.code === 200) {\r",
+              "        const rating = response.json();\r",
+              "        pm.test(\"Рейтинг события обнулен\", function() {\r",
+              "            pm.expect(rating.likes).to.equal(0);\r",
+              "            pm.expect(rating.dislikes).to.equal(0);\r",
+              "            pm.expect(rating.total).to.equal(0);\r",
+              "        });\r",
+              "    }\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { \r",
+              "        this.pm = pm; \r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; \r",
+              "    }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { \r",
+              "            url: `${this.baseUrl}${endpoint}`, \r",
+              "            method, \r",
+              "            header: {'Content-Type': 'application/json'} \r",
+              "        };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        \r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => {\r",
+              "                if (err) reject(err);\r",
+              "                else resolve(res);\r",
+              "            });\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(name, email) {\r",
+              "        const res = await this.request('POST', '/admin/users', { name, email });\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async publishEvent(eventId) {\r",
+              "        await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createRequest(userId, eventId) {\r",
+              "        await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`);\r",
+              "    }\r",
+              "    \r",
+              "    async rateEvent(userId, eventId, isLike) {\r",
+              "        await this.request('POST', `/users/${userId}/ratings`, { eventId, isLike });\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "    \r",
+              "    const organizer = await api.createUser(\r",
+              "        `Организатор ${timestamp}`, \r",
+              "        `org${timestamp}@test.com`\r",
+              "    );\r",
+              "    \r",
+              "    const participant = await api.createUser(\r",
+              "        `Участник ${timestamp}`, \r",
+              "        `part${timestamp}@test.com`\r",
+              "    );\r",
+              "    \r",
+              "    const category = await api.createCategory(`Категория ${timestamp}`);\r",
+              "    \r",
+              "    const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000);\r",
+              "    const eventDate = futureDate.toISOString().replace('T', ' ').substring(0, 19);\r",
+              "    \r",
+              "    const event = await api.createEvent(organizer.id, {\r",
+              "        annotation: `Событие ${timestamp}`,\r",
+              "        description: `Описание ${timestamp}`,\r",
+              "        title: `Событие ${timestamp}`,\r",
+              "        category: category.id,\r",
+              "        eventDate: eventDate,\r",
+              "        location: { lat: 55.7558, lon: 37.6173 },\r",
+              "        paid: false,\r",
+              "        participantLimit: 0,\r",
+              "        requestModeration: false\r",
+              "    });\r",
+              "    \r",
+              "    await api.publishEvent(event.id);\r",
+              "\r",
+              "    await api.createRequest(participant.id, event.id);\r",
+              "    await api.rateEvent(participant.id, event.id, true);\r",
+              "    \r",
+              "    pm.collectionVariables.set('participantId', participant.id);\r",
+              "    pm.collectionVariables.set('eventId', event.id);\r",
+              "    pm.collectionVariables.set('organizerId', organizer.id);\r",
+              "    pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "    \r",
+              "    const deleteUrl = `${api.baseUrl}/users/${participant.id}/ratings?eventId=${event.id}`;\r",
+              "    pm.request.method = 'DELETE';\r",
+              "    pm.request.url.update(deleteUrl);\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings?eventId={{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ],
+          "query": [
+            {
+              "key": "eventId",
+              "value": "{{eventId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete other user rating",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Нельзя удалить чужую оценку - 404 Not Found\", function() {\r",
+              "    pm.response.to.have.status(404);\r",
+              "    const response = pm.response.json();\r",
+              "    pm.expect(response.message).to.equal(\"Rating not found\");\r",
+              "});\r",
+              "\r",
+              "const participantId = pm.variables.get('current_participantId');\r",
+              "const eventId = pm.variables.get('current_eventId');\r",
+              "const baseUrl = pm.collectionVariables.get(\"baseUrl\") || pm.variables.get(\"baseUrl\") || \"http://localhost:8080\";\r",
+              "\r",
+              "setTimeout(() => {\r",
+              "    pm.sendRequest({\r",
+              "        url: `${baseUrl}/users/${participantId}/ratings/${eventId}`,\r",
+              "        method: 'GET'\r",
+              "    }, (err, response) => {\r",
+              "        pm.test(\"Оценка участника осталась неизменной\", function() {\r",
+              "            if (response && response.code === 200) {\r",
+              "                const rating = response.json();\r",
+              "                pm.expect(rating).to.be.true;\r",
+              "            } else {\r",
+              "                pm.expect.fail(\"Оценка участника была удалена, но не должна была\");\r",
+              "            }\r",
+              "        });\r",
+              "    });\r",
+              "}, 500);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { \r",
+              "        this.pm = pm; \r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; \r",
+              "    }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { \r",
+              "            url: `${this.baseUrl}${endpoint}`, \r",
+              "            method, \r",
+              "            header: {'Content-Type': 'application/json'} \r",
+              "        };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        \r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => {\r",
+              "                if (err) reject(err);\r",
+              "                else resolve(res);\r",
+              "            });\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(name, email) {\r",
+              "        const res = await this.request('POST', '/admin/users', { name, email });\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async publishEvent(eventId) {\r",
+              "        await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createRequest(userId, eventId) {\r",
+              "        await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`);\r",
+              "    }\r",
+              "    \r",
+              "    async rateEvent(userId, eventId, isLike) {\r",
+              "        await this.request('POST', `/users/${userId}/ratings`, { eventId, isLike });\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "    \r",
+              "    const organizer = await api.createUser(\r",
+              "        `Организатор_FOREIGN_${timestamp}`, \r",
+              "        `org_foreign_${timestamp}@test.com`\r",
+              "    );\r",
+              "    \r",
+              "    const participant = await api.createUser(\r",
+              "        `Участник_FOREIGN_${timestamp}`, \r",
+              "        `part_foreign_${timestamp}@test.com`\r",
+              "    );\r",
+              "    \r",
+              "    const stranger = await api.createUser(\r",
+              "        `Чужой_FOREIGN_${timestamp}`, \r",
+              "        `stranger_foreign_${timestamp}@test.com`\r",
+              "    );\r",
+              "    \r",
+              "    const category = await api.createCategory(`Категория_FOREIGN_${timestamp}`);\r",
+              "    \r",
+              "    const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000);\r",
+              "    const eventDate = futureDate.toISOString().replace('T', ' ').substring(0, 19);\r",
+              "    \r",
+              "    const event = await api.createEvent(organizer.id, {\r",
+              "        annotation: `Событие для чужой оценки ${timestamp}`,\r",
+              "        title: `Чужая оценка тест ${timestamp}`,\r",
+              "        description: `Тест удаления чужой оценки ${timestamp}`,\r",
+              "        category: category.id,\r",
+              "        eventDate: eventDate,\r",
+              "        location: { lat: 55.7558, lon: 37.6173 },\r",
+              "        paid: false,\r",
+              "        participantLimit: 0,\r",
+              "        requestModeration: false\r",
+              "    });\r",
+              "    \r",
+              "    await api.publishEvent(event.id);\r",
+              "    \r",
+              "    await api.createRequest(participant.id, event.id);\r",
+              "    await api.rateEvent(participant.id, event.id, true);\r",
+              "    \r",
+              "    pm.variables.set('current_strangerId', stranger.id);\r",
+              "    pm.variables.set('current_eventId', event.id);\r",
+              "    pm.variables.set('current_participantId', participant.id);\r",
+              "    \r",
+              "    const deleteUrl = `${api.baseUrl}/users/${stranger.id}/ratings?eventId=${event.id}`;\r",
+              "    pm.request.method = 'DELETE';\r",
+              "    pm.request.url.update(deleteUrl);\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings?eventId={{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ],
+          "query": [
+            {
+              "key": "eventId",
+              "value": "{{eventId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete already deleted rating",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Нельзя удалить уже удаленную оценку\", function() {\r",
+              "    pm.response.to.have.status(404);\r",
+              "});\r",
+              "\r",
+              "pm.test(\"Корректное сообщение об ошибке\", function() {\r",
+              "    const response = pm.response.json();\r",
+              "    pm.expect(response).to.have.property('message');\r",
+              "    pm.expect(response.message).to.include('not found');\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "class API {\r",
+              "    constructor(pm) { \r",
+              "        this.pm = pm; \r",
+              "        this.baseUrl = pm.variables.get('baseUrl') || 'http://localhost:8080'; \r",
+              "    }\r",
+              "    \r",
+              "    async request(method, endpoint, body = null) {\r",
+              "        const config = { \r",
+              "            url: `${this.baseUrl}${endpoint}`, \r",
+              "            method, \r",
+              "            header: {'Content-Type': 'application/json'} \r",
+              "        };\r",
+              "        if (body) config.body = { mode: 'raw', raw: JSON.stringify(body) };\r",
+              "        \r",
+              "        return new Promise((resolve, reject) => {\r",
+              "            this.pm.sendRequest(config, (err, res) => {\r",
+              "                if (err) reject(err);\r",
+              "                else resolve(res);\r",
+              "            });\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createUser(name, email) {\r",
+              "        const res = await this.request('POST', '/admin/users', { name, email });\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async createCategory(name) {\r",
+              "        const res = await this.request('POST', '/admin/categories', { name });\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async createEvent(userId, eventData) {\r",
+              "        const res = await this.request('POST', `/users/${userId}/events`, eventData);\r",
+              "        return res.code === 201 ? res.json() : null;\r",
+              "    }\r",
+              "    \r",
+              "    async publishEvent(eventId) {\r",
+              "        await this.request('PATCH', `/admin/events/${eventId}`, {\r",
+              "            stateAction: 'PUBLISH_EVENT'\r",
+              "        });\r",
+              "    }\r",
+              "    \r",
+              "    async createRequest(userId, eventId) {\r",
+              "        await this.request('POST', `/users/${userId}/requests?eventId=${eventId}`);\r",
+              "    }\r",
+              "    \r",
+              "    async rateEvent(userId, eventId, isLike) {\r",
+              "        await this.request('POST', `/users/${userId}/ratings`, { eventId, isLike });\r",
+              "    }\r",
+              "}\r",
+              "\r",
+              "(async () => {\r",
+              "    const api = new API(pm);\r",
+              "    const timestamp = Date.now();\r",
+              "    \r",
+              "    const organizer = await api.createUser(\r",
+              "        `Организатор_ALREADY_${timestamp}`, \r",
+              "        `org_already_${timestamp}@test.com`\r",
+              "    );\r",
+              "    \r",
+              "    const participant = await api.createUser(\r",
+              "        `Участник_ALREADY_${timestamp}`, \r",
+              "        `part_already_${timestamp}@test.com`\r",
+              "    );\r",
+              "    \r",
+              "    const category = await api.createCategory(`Категория_ALREADY_${timestamp}`);\r",
+              "    \r",
+              "    const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000);\r",
+              "    const eventDate = futureDate.toISOString().replace('T', ' ').substring(0, 19);\r",
+              "    \r",
+              "    const event = await api.createEvent(organizer.id, {\r",
+              "        annotation: `Событие уже удалено ${timestamp}`,\r",
+              "        title: `Уже удалено тест ${timestamp}`,\r",
+              "        description: `Тест повторного удаления ${timestamp}`,\r",
+              "        category: category.id,\r",
+              "        eventDate: eventDate,\r",
+              "        location: { lat: 55.7558, lon: 37.6173 },\r",
+              "        paid: false,\r",
+              "        participantLimit: 0,\r",
+              "        requestModeration: false\r",
+              "    });\r",
+              "    \r",
+              "    await api.publishEvent(event.id);\r",
+              "    \r",
+              "    await api.createRequest(participant.id, event.id);\r",
+              "    await api.rateEvent(participant.id, event.id, true);\r",
+              "    \r",
+              "    await api.request('DELETE', `/users/${participant.id}/ratings?eventId=${event.id}`);\r",
+              "    \r",
+              "    pm.variables.set('current_participantId', participant.id);\r",
+              "    pm.variables.set('current_eventId', event.id);\r",
+              "    pm.collectionVariables.set('baseUrl', api.baseUrl);\r",
+              "    \r",
+              "    const deleteUrl = `${api.baseUrl}/users/${participant.id}/ratings?eventId=${event.id}`;\r",
+              "    pm.request.method = 'DELETE';\r",
+              "    pm.request.url.update(deleteUrl);\r",
+              "})();"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{participantId}}/ratings?eventId={{eventId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{participantId}}",
+            "ratings"
+          ],
+          "query": [
+            {
+              "key": "eventId",
+              "value": "{{eventId}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "organizerId",
+      "value": ""
+    },
+    {
+      "key": "participantId",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "prepError",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    },
+    {
+      "key": "requestId",
+      "value": ""
+    },
+    {
+      "key": "fakeEventId",
+      "value": ""
+    },
+    {
+      "key": "baseUrl",
+      "value": ""
+    }
+  ]
+}
