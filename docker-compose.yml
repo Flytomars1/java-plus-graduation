@@ -1,6 +1,6 @@
 services:
   stats-server:
-    build: ./stats-service/ewm-stats-server
+    build: ./stats-service/stats-server
     ports:
       - "9090:9090"
     depends_on:

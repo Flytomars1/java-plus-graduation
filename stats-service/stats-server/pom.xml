@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>ru.practicum</groupId>
-            <artifactId>ewm-stats-dto</artifactId>
+            <artifactId>stats-dto</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
@@ -73,7 +73,7 @@
     </dependencies>
 
     <build>
-        <finalName>stats-service</finalName>
+        <finalName>stats-server</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
