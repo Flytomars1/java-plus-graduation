@@ -1,0 +1,41 @@
+services:
+  stats-db:
+    image: postgres:16.1
+    container_name: stats-db
+    environment:
+      POSTGRES_DB: stats
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "6542:5432"
+    volumes:
+      - stats_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d stats"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ewm-network
+
+  ewm-db:
+    image: postgres:16.1
+    container_name: ewm-db
+    environment:
+      POSTGRES_DB: ewm
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "6543:5432"
+    volumes:
+      - ewm_data:/var/lib/postgresql/data
+    networks:
+      - ewm-network
+
+volumes:
+  stats_data:
+  ewm_data:
+
+networks:
+  ewm-network:
+    driver: bridge
