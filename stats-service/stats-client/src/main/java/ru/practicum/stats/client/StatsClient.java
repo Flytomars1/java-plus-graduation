@@ -29,7 +29,7 @@ public class StatsClient {
     public StatsClient(DiscoveryClient discoveryClient, RestTemplate restTemplate) {
         this.discoveryClient = discoveryClient;
         this.restTemplate = restTemplate;
-        this.statsServiceId = "ewm-stats-server";
+        this.statsServiceId = "stats-server";
 
         this.retryTemplate = new RetryTemplate();
 
