@@ -242,10 +242,14 @@ public class EventServiceImpl implements EventService {
 
     /* Helpers */
     private void safeAddHit(String uri, String ip) {
+        log.info("Saving hit for uri: {}, ip: {}", uri, ip);
         try {
-            statsClient.hit(buildHit("ewm-main-service", uri, ip, LocalDateTime.now()));
+            HitDto hit = buildHit("ewm-event-service", uri, ip, LocalDateTime.now());
+            log.info("HitDto: {}", hit);
+            statsClient.hit(hit);
+            log.info("Hit saved successfully");
         } catch (Exception e) {
-            log.warn("Could not save stats hit: {}", e.getMessage());
+            log.warn("Could not save stats hit: {}", e.getMessage(), e);
         }
     }
 

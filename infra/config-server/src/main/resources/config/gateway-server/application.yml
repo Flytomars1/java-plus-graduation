@@ -9,17 +9,45 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-        - id: main-service
-          uri: lb://main-service
+        - id: event-service
+          uri: lb://event-service
           predicates:
-            - Path=/**
+            - Path=/categories/**, /compilations/**, /events/**, /admin/categories/**, /admin/compilations/**, /admin/events/**, /users/*/events, /users/*/events/**
           filters:
             - StripPrefix=0
+
+        - id: request-service
+          uri: lb://request-service
+          predicates:
+            - Path=/users/*/requests, /users/*/requests/**
+          filters:
+            - StripPrefix=0
+
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/admin/users/**
+          filters:
+            - StripPrefix=0
+
+        - id: rating-service
+          uri: lb://rating-service
+          predicates:
+            - Path=/ratings/**, /users/*/ratings/**
+          filters:
+            - StripPrefix=0
+
+          #id: main-service
+          #uri: lb://main-service
+          #predicates:
+          #  - Path=/**
+          #filters:
+          # - StripPrefix=0
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://localhost:8761/eureka
   instance:
     prefer-ip-address: true
 
