@@ -17,12 +17,14 @@ import ru.practicum.request.repository.RequestRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Slf4j
 public class RequestServiceImpl implements RequestService {
 
@@ -36,6 +38,20 @@ public class RequestServiceImpl implements RequestService {
         }
 
         return requestRepository.findAllByRequesterId(userId).stream()
+                .map(RequestMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Long getConfirmedRequestsCount(Long eventId) {
+        log.debug("Internal API: get confirmed requests count for event {}", eventId);
+        return requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+    }
+
+    @Override
+    public List<ParticipationRequestDto> getRequestsByEventId(Long eventId) {
+        log.debug("Internal API: get all requests for event {}", eventId);
+        return requestRepository.findAllByEventId(eventId).stream()
                 .map(RequestMapper::toDto)
                 .collect(Collectors.toList());
     }
@@ -107,20 +123,6 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
-    public Long getConfirmedRequestsCount(Long eventId) {
-        log.debug("Internal API: get confirmed requests count for event {}", eventId);
-        return requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
-    }
-
-    @Override
-    public List<ParticipationRequestDto> getRequestsByEventId(Long eventId) {
-        log.debug("Internal API: get all requests for event {}", eventId);
-        return requestRepository.findAllByEventId(eventId).stream()
-                .map(RequestMapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    @Override
     @Transactional
     public EventRequestStatusUpdateResult updateRequestStatus(Long eventId, EventRequestStatusUpdateRequest request) {
         log.debug("Internal API: update request statuses for event {}", eventId);
@@ -156,6 +158,7 @@ public class RequestServiceImpl implements RequestService {
             throw new ConflictException("The participant limit has been reached");
         }
 
+        List<ParticipationRequest> requestsToSave = new ArrayList<>();
         List<ParticipationRequestDto> confirmed = new ArrayList<>();
         List<ParticipationRequestDto> rejected = new ArrayList<>();
 
@@ -168,21 +171,40 @@ public class RequestServiceImpl implements RequestService {
                 if (event.getParticipantLimit() != null && event.getParticipantLimit() > 0
                         && confirmedCount >= event.getParticipantLimit()) {
                     req.setStatus(RequestStatus.REJECTED);
-                    rejected.add(RequestMapper.toDto(requestRepository.save(req)));
+                    rejected.add(RequestMapper.toDto(req));
+                    requestsToSave.add(req);
                 } else {
                     req.setStatus(RequestStatus.CONFIRMED);
-                    confirmed.add(RequestMapper.toDto(requestRepository.save(req)));
+                    confirmed.add(RequestMapper.toDto(req));
+                    requestsToSave.add(req);
                     confirmedCount++;
                 }
             } else {
                 req.setStatus(RequestStatus.REJECTED);
-                rejected.add(RequestMapper.toDto(requestRepository.save(req)));
+                rejected.add(RequestMapper.toDto(req));
+                requestsToSave.add(req);
             }
+        }
+
+        if (!requestsToSave.isEmpty()) {
+            requestRepository.saveAll(requestsToSave);
         }
 
         log.info("Updated request statuses for event {}: confirmed={}, rejected={}",
                 eventId, confirmed.size(), rejected.size());
 
         return new EventRequestStatusUpdateResult(confirmed, rejected);
+    }
+
+    @Override
+    public Map<Long, Long> getConfirmedRequestsCounts(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return eventIds.stream()
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        eventId -> requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED)
+                ));
     }
 }

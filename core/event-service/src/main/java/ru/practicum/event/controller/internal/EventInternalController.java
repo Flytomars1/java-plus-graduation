@@ -18,7 +18,6 @@ import ru.practicum.exception.NotFoundException;
 public class EventInternalController implements EventInternalApi {
 
     private final EventRepository eventRepository;
-    private final EventMapper eventMapper;
     private final EventCircuitBreakerService circuitBreakerService;
 
     @Override
@@ -33,7 +32,7 @@ public class EventInternalController implements EventInternalApi {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event not found with id: " + eventId));
 
-        EventShortDto dto = eventMapper.toShort(event, 0L);
+        EventShortDto dto = EventMapper.toShort(event, 0L);
         dto.setState(event.getState().name());
         dto.setParticipantLimit(event.getParticipantLimit());
         dto.setRequestModeration(event.getRequestModeration());

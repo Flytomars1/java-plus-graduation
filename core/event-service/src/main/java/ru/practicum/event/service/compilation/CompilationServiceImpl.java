@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Slf4j
 public class CompilationServiceImpl implements CompilationService {
 
@@ -135,18 +134,17 @@ public class CompilationServiceImpl implements CompilationService {
     }
 
     private Map<Long, UserShortDto> fetchUsers(Set<Long> userIds) {
-        Map<Long, UserShortDto> usersMap = new HashMap<>();
-
-        for (Long userId : userIds) {
-            try {
-                UserShortDto user = userClient.getUserShortById(userId);
-                if (user != null) {
-                    usersMap.put(userId, user);
-                }
-            } catch (Exception e) {
-                log.warn("Could not fetch user with id {}: {}", userId, e.getMessage());
-            }
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
         }
-        return usersMap;
+
+        try {
+            List<UserShortDto> users = userClient.getUsersShortByIds(new ArrayList<>(userIds));
+            return users.stream()
+                    .collect(Collectors.toMap(UserShortDto::getId, user -> user));
+        } catch (Exception e) {
+            log.warn("Could not fetch users batch: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
     }
 }

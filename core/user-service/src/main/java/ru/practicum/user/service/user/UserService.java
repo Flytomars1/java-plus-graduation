@@ -17,4 +17,6 @@ public interface UserService {
     User getUserById(Long userId);
 
     boolean existsById(Long userId);
+
+    List<User> getUsersByIds(List<Long> userIds);  // ← добавить
 }

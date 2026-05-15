@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dto.event.EventShortDto;
-import ru.practicum.dto.rating.EventRatingDto;
 import ru.practicum.dto.rating.RateEventRequest;
 import ru.practicum.dto.rating.RatingDto;
 import ru.practicum.exception.ConflictException;
@@ -15,11 +14,14 @@ import ru.practicum.rating.model.EventRating;
 import ru.practicum.rating.repository.RatingRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional(readOnly = true)
 public class RatingServiceImpl implements RatingService {
 
     private final RatingRepository ratingRepository;
@@ -120,5 +122,17 @@ public class RatingServiceImpl implements RatingService {
         return ratingRepository.findByUserIdAndEventId(userId, eventId)
                 .map(EventRating::getIsLike)
                 .orElse(null);
+    }
+
+    @Override
+    public Map<Long, RatingDto> getEventRatings(List<Long> eventIds) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, RatingDto> result = new HashMap<>();
+        for (Long eventId : eventIds) {
+            result.put(eventId, getEventRating(eventId));
+        }
+        return result;
     }
 }

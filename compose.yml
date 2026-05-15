@@ -1,6 +1,11 @@
+x-db-common: &db-common
+  image: postgres:16.1
+  networks:
+    - ewm-network
+
 services:
   event-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: event-db
     environment:
       POSTGRES_DB: event_db
@@ -15,11 +20,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - ewm-network
 
   request-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: request-db
     environment:
       POSTGRES_DB: request_db
@@ -34,11 +37,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - ewm-network
 
   user-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: user-db
     environment:
       POSTGRES_DB: user_db
@@ -53,11 +54,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - ewm-network
 
   rating-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: rating-db
     environment:
       POSTGRES_DB: rating_db
@@ -72,11 +71,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - ewm-network
 
   stats-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: stats-db
     environment:
       POSTGRES_DB: stats
@@ -91,11 +88,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - ewm-network
 
   ewm-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: ewm-db
     environment:
       POSTGRES_DB: ewm
@@ -105,8 +100,11 @@ services:
       - "6543:5432"
     volumes:
       - ewm_data:/var/lib/postgresql/data
-    networks:
-      - ewm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ewm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   event_data:

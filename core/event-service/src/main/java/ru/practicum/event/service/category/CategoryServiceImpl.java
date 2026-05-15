@@ -1,6 +1,7 @@
 package ru.practicum.event.service.category;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,18 +19,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Slf4j
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final EventRepository eventRepository;
-    private final CategoryMapper categoryMapper;
 
     @Override
     @Transactional
     public CategoryDto createCategory(NewCategoryDto newCategoryDto) {
-        Category category = categoryMapper.toEntity(newCategoryDto);
-        return categoryMapper.toDto(categoryRepository.save(category));
+        Category category = CategoryMapper.toEntity(newCategoryDto);
+        return CategoryMapper.toDto(categoryRepository.save(category));
     }
 
     @Override
@@ -38,7 +38,7 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(catId)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
         category.setName(categoryDto.getName());
-        return categoryMapper.toDto(categoryRepository.save(category));
+        return CategoryMapper.toDto(categoryRepository.save(category));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<CategoryDto> getAllCategories(int from, int size) {
         return categoryRepository.findAll(PageRequest.of(from / size, size)).stream()
-                .map(categoryMapper::toDto)
+                .map(CategoryMapper::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -66,6 +66,6 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto getCategoryById(Long catId) {
         Category category = categoryRepository.findById(catId)
                 .orElseThrow(() -> new NotFoundException("Category not found"));
-        return categoryMapper.toDto(category);
+        return CategoryMapper.toDto(category);
     }
 }

@@ -20,11 +20,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final UserUpdater userUpdater;
 
     @Override
     @Transactional
@@ -33,11 +32,24 @@ public class UserServiceImpl implements UserService {
 
         checkEmailUniqueness(newUserRequest.getEmail());
 
-        User user = userMapper.toEntity(newUserRequest);
+        User user = UserMapper.toEntity(newUserRequest);
         User savedUser = userRepository.save(user);
 
         log.info("User created with id: {}", savedUser.getId());
-        return userMapper.toDto(savedUser);
+        return UserMapper.toDto(savedUser);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long userId) {
+        log.info("Deleting user with id: {}", userId);
+
+        if (!userRepository.existsById(userId)) {
+            throw new NotFoundException("User with id=" + userId + " was not found");
+        }
+
+        userRepository.deleteById(userId);
+        log.info("User with id: {} deleted", userId);
     }
 
     @Override
@@ -56,21 +68,8 @@ public class UserServiceImpl implements UserService {
         }
 
         return users.stream()
-                .map(userMapper::toDto)
+                .map(UserMapper::toDto)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional
-    public void deleteUser(Long userId) {
-        log.info("Deleting user with id: {}", userId);
-
-        if (!userRepository.existsById(userId)) {
-            throw new NotFoundException("User with id=" + userId + " was not found");
-        }
-
-        userRepository.deleteById(userId);
-        log.info("User with id: {} deleted", userId);
     }
 
     @Override
@@ -84,6 +83,15 @@ public class UserServiceImpl implements UserService {
     public boolean existsById(Long userId) {
         log.debug("Checking if user exists by id: {}", userId);
         return userRepository.existsById(userId);
+    }
+
+    @Override
+    public List<User> getUsersByIds(List<Long> userIds) {
+        log.debug("Getting users by ids: {}", userIds);
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        return userRepository.findAllById(userIds);
     }
 
     private void checkEmailUniqueness(String email) {

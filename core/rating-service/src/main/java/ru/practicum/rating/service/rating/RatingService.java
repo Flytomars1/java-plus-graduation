@@ -4,6 +4,9 @@ import ru.practicum.dto.rating.EventRatingDto;
 import ru.practicum.dto.rating.RateEventRequest;
 import ru.practicum.dto.rating.RatingDto;
 
+import java.util.List;
+import java.util.Map;
+
 
 public interface RatingService {
     void rateEvent(Long userId, RateEventRequest request);
@@ -13,4 +16,6 @@ public interface RatingService {
     RatingDto getEventRating(Long eventId);
 
     Boolean getUserRatingForEvent(Long userId, Long eventId);
+
+    Map<Long, RatingDto> getEventRatings(List<Long> eventIds);
 }

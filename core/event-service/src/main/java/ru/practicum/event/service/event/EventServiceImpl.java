@@ -31,14 +31,12 @@ import ru.practicum.stats.dto.HitDto;
 import ru.practicum.stats.dto.ViewStatsDto;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Slf4j
 public class EventServiceImpl implements EventService {
 
@@ -46,10 +44,10 @@ public class EventServiceImpl implements EventService {
     private final CategoryRepository categoryRepository;
     private final StatsClient statsClient;
     private final RatingClient ratingClient;
-
     private final UserClient userClient;
     private final RequestClient requestClient;
     private final EventCircuitBreakerService circuitBreakerService;
+    private final EventUpdater eventUpdater;
 
     @Override
     @Transactional
@@ -88,37 +86,8 @@ public class EventServiceImpl implements EventService {
             }
         }
 
-        EventMapper.applyUserUpdate(e, dto);
+        eventUpdater.applyUserUpdate(e, dto);
         return enrichFullDto(eventRepository.save(e));
-    }
-
-    @Override
-    public EventFullDto getUserEvent(Long userId, Long eventId) {
-        Event e = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found"));
-        if (!Objects.equals(e.getInitiatorId(), userId)) {
-            throw new NotFoundException("Event not found for this user");
-        }
-        return enrichFullDto(e);
-    }
-
-    @Override
-    public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
-        if (!Boolean.TRUE.equals(userClient.userExists(userId))) {
-            throw new NotFoundException("User not found");
-        }
-        Pageable pageable = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "id"));
-        return eventRepository.findAllByInitiatorId(userId, pageable).getContent().stream()
-                .map(this::enrichShortDto)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ParticipationRequestDto> getEventParticipants(Long userId, Long eventId) {
-        Event event = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found"));
-        if (!event.getInitiatorId().equals(userId)) {
-            throw new ConflictException("User is not initiator");
-        }
-        return requestClient.getRequestsByEventId(eventId);
     }
 
     @Override
@@ -137,6 +106,61 @@ public class EventServiceImpl implements EventService {
         }
 
         return requestClient.updateRequestStatus(eventId, dto);
+    }
+
+    @Override
+    @Transactional
+    public EventFullDto updateByAdmin(Long eventId, UpdateEventAdminRequest dto) {
+        Event e = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found"));
+
+        if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
+            throw new ConflictException("Date too early");
+        }
+
+        if (dto.getStateAction() != null) {
+            if (dto.getStateAction() == AdminStateAction.PUBLISH_EVENT) {
+                if (e.getState() != EventState.PENDING) {
+                    throw new ConflictException("Cannot publish not pending");
+                }
+                e.setState(EventState.PUBLISHED);
+                e.setPublishedOn(LocalDateTime.now());
+            } else if (dto.getStateAction() == AdminStateAction.REJECT_EVENT) {
+                if (e.getState() == EventState.PUBLISHED) {
+                    throw new ConflictException("Cannot reject published");
+                }
+                e.setState(EventState.CANCELED);
+            }
+        }
+        eventUpdater.applyAdminUpdate(e, dto);
+        return enrichFullDto(eventRepository.save(e));
+    }
+
+    @Override
+    public EventFullDto getUserEvent(Long userId, Long eventId) {
+        Event e = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found"));
+        if (!Objects.equals(e.getInitiatorId(), userId)) {
+            throw new NotFoundException("Event not found for this user");
+        }
+        return enrichFullDto(e);
+    }
+
+    @Override
+    public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
+        if (!Boolean.TRUE.equals(userClient.userExists(userId))) {
+            throw new NotFoundException("User not found");
+        }
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "id"));
+        List<Event> events = eventRepository.findAllByInitiatorId(userId, pageable).getContent();
+        return enrichShortDtos(events);
+    }
+
+    @Override
+    public List<ParticipationRequestDto> getEventParticipants(Long userId, Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found"));
+        if (!event.getInitiatorId().equals(userId)) {
+            throw new ConflictException("User is not initiator");
+        }
+        return requestClient.getRequestsByEventId(eventId);
     }
 
     @Override
@@ -174,10 +198,9 @@ public class EventServiceImpl implements EventService {
             comparator = Comparator.comparing(EventShortDto::getEventDate, Comparator.nullsLast(Comparator.naturalOrder()));
         }
 
-        return page.getContent().stream()
-                .map(this::enrichShortDto)
-                .sorted(comparator)
-                .collect(Collectors.toList());
+        List<EventShortDto> dtos = enrichShortDtos(page.getContent());
+        dtos.sort(comparator);
+        return dtos;
     }
 
     @Override
@@ -194,7 +217,7 @@ public class EventServiceImpl implements EventService {
             views = 1;
         }
 
-        return enrichFullDtoWithViews(e, views);
+        return enrichFullDto(e, views);
     }
 
     @Override
@@ -206,77 +229,145 @@ public class EventServiceImpl implements EventService {
                 .and(categories == null || categories.isEmpty() ? null : inCategories(categories));
 
         Pageable pageable = PageRequest.of(from / size, size, Sort.by("id"));
-        return eventRepository.findAll(spec, pageable).getContent().stream()
-                .map(this::enrichFullDto)
+        List<Event> events = eventRepository.findAll(spec, pageable).getContent();
+        return enrichFullDtos(events);
+    }
+
+    private EventDataBundle prepareEventDataBundle(List<Event> events) {
+        if (events.isEmpty()) {
+            return new EventDataBundle(Collections.emptyMap(), Collections.emptyMap(),
+                    Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
+        }
+
+        Set<Long> categoryIds = events.stream()
+                .map(Event::getCategoryId)
+                .collect(Collectors.toSet());
+        Set<Long> initiatorIds = events.stream()
+                .map(Event::getInitiatorId)
+                .collect(Collectors.toSet());
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Category> categoriesMap = categoryRepository.findAllById(categoryIds).stream()
+                .collect(Collectors.toMap(Category::getId, Function.identity()));
+        Map<Long, CategoryDto> categoryDtoMap = categoriesMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> new CategoryDto(e.getValue().getId(), e.getValue().getName())));
+
+        Map<Long, Long> viewsMap = fetchViewsBatch(eventIds);
+        Map<Long, Long> confirmedMap = fetchConfirmedCountsBatch(eventIds);
+        Map<Long, UserShortDto> usersMap = fetchUsersBatch(initiatorIds);
+        Map<Long, RatingDto> ratingsMap = fetchRatingsBatch(eventIds);
+
+        return new EventDataBundle(categoryDtoMap, viewsMap, confirmedMap, usersMap, ratingsMap);
+    }
+
+    private record EventDataBundle(
+            Map<Long, CategoryDto> categoryDtoMap,
+            Map<Long, Long> viewsMap,
+            Map<Long, Long> confirmedMap,
+            Map<Long, UserShortDto> usersMap,
+            Map<Long, RatingDto> ratingsMap
+    ) {}
+
+    private List<EventFullDto> enrichFullDtos(List<Event> events) {
+        if (events.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        EventDataBundle bundle = prepareEventDataBundle(events);
+
+        return events.stream()
+                .map(event -> {
+                    CategoryDto catDto = bundle.categoryDtoMap.get(event.getCategoryId());
+                    UserShortDto userDto = bundle.usersMap.get(event.getInitiatorId());
+                    Long views = bundle.viewsMap.getOrDefault(event.getId(), 0L);
+                    Long confirmed = bundle.confirmedMap.getOrDefault(event.getId(), 0L);
+                    RatingDto rating = bundle.ratingsMap.get(event.getId());
+                    return EventMapper.toFull(event, catDto, userDto, views, confirmed, rating);
+                })
                 .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional
-    public EventFullDto updateByAdmin(Long eventId, UpdateEventAdminRequest dto) {
-        Event e = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found"));
-
-        if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-            throw new ConflictException("Date too early");
+    private List<EventShortDto> enrichShortDtos(List<Event> events) {
+        if (events.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        if (dto.getStateAction() != null) {
-            if (dto.getStateAction() == AdminStateAction.PUBLISH_EVENT) {
-                if (e.getState() != EventState.PENDING) {
-                    throw new ConflictException("Cannot publish not pending");
-                }
-                e.setState(EventState.PUBLISHED);
-                e.setPublishedOn(LocalDateTime.now());
-            } else if (dto.getStateAction() == AdminStateAction.REJECT_EVENT) {
-                if (e.getState() == EventState.PUBLISHED) {
-                    throw new ConflictException("Cannot reject published");
-                }
-                e.setState(EventState.CANCELED);
-            }
-        }
-        EventMapper.applyAdminUpdate(e, dto);
-        return enrichFullDto(eventRepository.save(e));
+        EventDataBundle bundle = prepareEventDataBundle(events);
+
+        return events.stream()
+                .map(event -> {
+                    CategoryDto catDto = bundle.categoryDtoMap.get(event.getCategoryId());
+                    UserShortDto userDto = bundle.usersMap.get(event.getInitiatorId());
+                    Long views = bundle.viewsMap.getOrDefault(event.getId(), 0L);
+                    Long confirmed = bundle.confirmedMap.getOrDefault(event.getId(), 0L);
+                    RatingDto rating = bundle.ratingsMap.get(event.getId());
+                    return EventMapper.toShort(event, catDto, userDto, views, confirmed, rating);
+                })
+                .collect(Collectors.toList());
     }
 
-    /* Helpers */
+    private EventFullDto enrichFullDto(Event e) {
+        long views = fetchViews(e.getId());
+        return enrichFullDto(e, views);
+    }
+
+    private EventFullDto enrichFullDto(Event e, long views) {
+        Category cat = categoryRepository.findById(e.getCategoryId()).orElse(null);
+        CategoryDto catDto = cat != null ? new CategoryDto(cat.getId(), cat.getName()) : null;
+
+        UserShortDto userDto = circuitBreakerService.getUserShortById(e.getInitiatorId());
+        Long confirmed = circuitBreakerService.getConfirmedRequestsCount(e.getId());
+        RatingDto rating = circuitBreakerService.getEventRating(e.getId());
+
+        return EventMapper.toFull(e, catDto, userDto, views, confirmed, rating);
+    }
+
+    private Map<Long, Long> fetchViewsBatch(List<Long> eventIds) {
+        Map<Long, Long> result = new HashMap<>();
+        for (Long eventId : eventIds) {
+            result.put(eventId, fetchViews(eventId));
+        }
+        return result;
+    }
+
+    private Map<Long, Long> fetchConfirmedCountsBatch(List<Long> eventIds) {
+        try {
+            return requestClient.getConfirmedRequestsCounts(eventIds);
+        } catch (Exception e) {
+            log.warn("Failed to fetch confirmed counts batch: {}", e.getMessage());
+            return eventIds.stream().collect(Collectors.toMap(id -> id, id -> 0L));
+        }
+    }
+
+    private Map<Long, UserShortDto> fetchUsersBatch(Set<Long> userIds) {
+        try {
+            List<UserShortDto> users = userClient.getUsersShortByIds(new ArrayList<>(userIds));
+            return users.stream()
+                    .collect(Collectors.toMap(UserShortDto::getId, user -> user));
+        } catch (Exception e) {
+            log.warn("Failed to fetch users batch: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<Long, RatingDto> fetchRatingsBatch(List<Long> eventIds) {
+        try {
+            return ratingClient.getEventRatings(eventIds);
+        } catch (Exception e) {
+            log.warn("Failed to fetch ratings batch: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
+    }
+
     private void safeAddHit(String uri, String ip) {
         try {
             statsClient.hit(buildHit("ewm-event-service", uri, ip, LocalDateTime.now()));
         } catch (Exception e) {
             log.warn("Could not save stats hit: {}", e.getMessage());
         }
-    }
-
-    private EventFullDto enrichFullDto(Event e) {
-        long views = fetchViews(e.getId());
-        return enrichFullDtoWithViews(e, views);
-    }
-
-    private EventFullDto enrichFullDtoWithViews(Event e, long views) {
-        Long confirmed = circuitBreakerService.getConfirmedRequestsCount(e.getId());
-
-        Category cat = categoryRepository.findById(e.getCategoryId()).orElse(null);
-        CategoryDto catDto = cat != null ? new CategoryDto(cat.getId(), cat.getName()) : null;
-
-        UserShortDto userDto = circuitBreakerService.getUserShortById(e.getInitiatorId());
-
-        RatingDto rating = circuitBreakerService.getEventRating(e.getId());
-
-        return EventMapper.toFull(e, catDto, userDto, views, confirmed, rating);
-    }
-
-    private EventShortDto enrichShortDto(Event e) {
-        long views = fetchViews(e.getId());
-        Long confirmed = circuitBreakerService.getConfirmedRequestsCount(e.getId());
-
-        Category cat = categoryRepository.findById(e.getCategoryId()).orElse(null);
-        CategoryDto catDto = cat != null ? new CategoryDto(cat.getId(), cat.getName()) : null;
-
-        UserShortDto userDto = circuitBreakerService.getUserShortById(e.getInitiatorId());
-
-        RatingDto rating = circuitBreakerService.getEventRating(e.getId());
-
-        return EventMapper.toShort(e, catDto, userDto, views, confirmed, rating);
     }
 
     private long fetchViews(Long eventId) {

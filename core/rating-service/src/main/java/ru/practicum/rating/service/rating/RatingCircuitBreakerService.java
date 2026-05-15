@@ -25,7 +25,7 @@ public class RatingCircuitBreakerService {
     }
 
     private Boolean userExistsFallback(Long userId, Throwable t) {
-        log.warn("Circuit Breaker: user-service unavailable for user {}, fallback: true", userId);
+        log.warn("Circuit Breaker: user-service unavailable for user {}, fallback: true. Error: {}", userId, t.getMessage(), t);
         return true;
     }
 
@@ -36,7 +36,7 @@ public class RatingCircuitBreakerService {
     }
 
     private EventShortDto getEventByIdFallback(Long eventId, Throwable t) {
-        log.warn("Circuit Breaker: event-service unavailable for event {}, throwing exception", eventId);
+        log.warn("Circuit Breaker: event-service unavailable for event {}, throwing exception. Error: {}", eventId, t.getMessage(), t);
         throw new RuntimeException("Event service unavailable");
     }
 
@@ -47,7 +47,7 @@ public class RatingCircuitBreakerService {
     }
 
     private Boolean eventExistsFallback(Long eventId, Throwable t) {
-        log.warn("Circuit Breaker: event-service unavailable for event {}, fallback: false", eventId);
+        log.warn("Circuit Breaker: event-service unavailable for event {}, fallback: false. Error: {}", eventId, t.getMessage(), t);
         return false;
     }
 
@@ -58,7 +58,7 @@ public class RatingCircuitBreakerService {
     }
 
     private Long getConfirmedRequestsCountFallback(Long eventId, Throwable t) {
-        log.warn("Circuit Breaker: request-service unavailable for event {}, fallback: 0", eventId);
+        log.warn("Circuit Breaker: request-service unavailable for event {}, fallback: 0. Error: {}", eventId, t.getMessage(), t);
         return 0L;
     }
 }

@@ -1,6 +1,5 @@
 package ru.practicum.event.mapper;
 
-import org.springframework.stereotype.Component;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.event.EventShortDto;
@@ -10,7 +9,6 @@ import ru.practicum.event.model.Event;
 import java.util.List;
 import java.util.Set;
 
-@Component
 public class CompilationMapper {
 
     public static Compilation toEntity(NewCompilationDto dto, Set<Event> events) {

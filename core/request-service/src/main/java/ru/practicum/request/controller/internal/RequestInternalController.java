@@ -9,6 +9,7 @@ import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.request.service.request.RequestService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/internal/requests")
@@ -36,5 +37,11 @@ public class RequestInternalController {
             @RequestBody EventRequestStatusUpdateRequest request) {
         log.debug("Internal API: update request statuses for event {}", eventId);
         return requestService.updateRequestStatus(eventId, request);
+    }
+
+    @PostMapping("/counts/batch")
+    public Map<Long, Long> getConfirmedRequestsCounts(@RequestBody List<Long> eventIds) {
+        log.debug("Internal API: get confirmed requests counts for events: {}", eventIds);
+        return requestService.getConfirmedRequestsCounts(eventIds);
     }
 }

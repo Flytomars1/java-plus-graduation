@@ -26,7 +26,8 @@ public class EventCircuitBreakerService {
     }
 
     private UserShortDto getUserShortByIdFallback(Long userId, Throwable t) {
-        log.warn("Circuit Breaker: user-service unavailable for user {}, fallback: {}", userId, t.getMessage());
+        log.warn("Circuit Breaker: user-service unavailable for user {}, fallback: {}. Error: {}",
+                userId, "Unknown User", t.getMessage(), t);
         return new UserShortDto(userId, "Unknown User");
     }
 
@@ -37,7 +38,8 @@ public class EventCircuitBreakerService {
     }
 
     private Long getConfirmedRequestsCountFallback(Long eventId, Throwable t) {
-        log.warn("Circuit Breaker: request-service unavailable for event {}, fallback: 0", eventId);
+        log.warn("Circuit Breaker: request-service unavailable for event {}, fallback: 0. Error: {}",
+                eventId, t.getMessage(), t);
         return 0L;
     }
 
@@ -48,7 +50,8 @@ public class EventCircuitBreakerService {
     }
 
     private RatingDto getEventRatingFallback(Long eventId, Throwable t) {
-        log.warn("Circuit Breaker: rating-service unavailable for event {}, fallback: default rating", eventId);
+        log.warn("Circuit Breaker: rating-service unavailable for event {}, fallback: default rating. Error: {}",
+                eventId, t.getMessage(), t);
         return RatingDto.builder()
                 .score(0)
                 .likes(0L)
