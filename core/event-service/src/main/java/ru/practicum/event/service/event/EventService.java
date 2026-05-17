@@ -31,4 +31,10 @@ public interface EventService {
                                    LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size);
 
     EventFullDto updateByAdmin(Long eventId, UpdateEventAdminRequest dto);
+
+    boolean existsById(Long eventId);
+
+    EventShortDto getEventShortById(Long eventId);
+
+    boolean isEventPublished(Long eventId);
 }

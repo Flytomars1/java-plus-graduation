@@ -233,6 +233,39 @@ public class EventServiceImpl implements EventService {
         return enrichFullDtos(events);
     }
 
+    @Override
+    public boolean existsById(Long eventId) {
+        log.debug("Checking if event exists by id: {}", eventId);
+        return eventRepository.existsById(eventId);
+    }
+
+    @Override
+    public EventShortDto getEventShortById(Long eventId) {
+        log.debug("Getting event short by id: {}", eventId);
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found with id: " + eventId));
+
+        EventShortDto dto = EventMapper.toShort(event, 0L);
+        dto.setState(event.getState().name());
+        dto.setParticipantLimit(event.getParticipantLimit());
+        dto.setRequestModeration(event.getRequestModeration());
+
+        if (event.getInitiatorId() != null) {
+            UserShortDto initiator = circuitBreakerService.getUserShortById(event.getInitiatorId());
+            dto.setInitiator(initiator);
+        }
+
+        return dto;
+    }
+
+    @Override
+    public boolean isEventPublished(Long eventId) {
+        log.debug("Checking if event is published: {}", eventId);
+        return eventRepository.findById(eventId)
+                .map(event -> event.getState() == EventState.PUBLISHED)
+                .orElse(false);
+    }
+
     private EventDataBundle prepareEventDataBundle(List<Event> events) {
         if (events.isEmpty()) {
             return new EventDataBundle(Collections.emptyMap(), Collections.emptyMap(),
