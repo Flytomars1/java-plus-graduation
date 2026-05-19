@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: rating-service
+  config:
+    import: "configserver:"
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: config-server
+      fail-fast: true
+      retry:
+        max-attempts: 10

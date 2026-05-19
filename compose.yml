@@ -1,6 +1,79 @@
+x-db-common: &db-common
+  image: postgres:16.1
+  networks:
+    - ewm-network
+
 services:
+  event-db:
+    <<: *db-common
+    container_name: event-db
+    environment:
+      POSTGRES_DB: event_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - event_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d event_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  request-db:
+    <<: *db-common
+    container_name: request-db
+    environment:
+      POSTGRES_DB: request_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - request_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d request_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-db:
+    <<: *db-common
+    container_name: user-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rating-db:
+    <<: *db-common
+    container_name: rating-db
+    environment:
+      POSTGRES_DB: rating_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5435:5432"
+    volumes:
+      - rating_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d rating_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   stats-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: stats-db
     environment:
       POSTGRES_DB: stats
@@ -15,11 +88,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - ewm-network
 
   ewm-db:
-    image: postgres:16.1
+    <<: *db-common
     container_name: ewm-db
     environment:
       POSTGRES_DB: ewm
@@ -29,10 +100,17 @@ services:
       - "6543:5432"
     volumes:
       - ewm_data:/var/lib/postgresql/data
-    networks:
-      - ewm-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d ewm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
+  event_data:
+  request_data:
+  user_data:
+  rating_data:
   stats_data:
   ewm_data:
 

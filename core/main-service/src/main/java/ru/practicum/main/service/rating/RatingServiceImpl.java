@@ -40,10 +40,6 @@ public class RatingServiceImpl implements RatingService {
             throw new ConflictException("Cannot rate own event");
         }
 
-        //if (event.getEventDate().isAfter(LocalDateTime.now())) {
-        //    throw new ConflictException("Cannot rate future event");
-        //}
-
         if (event.getState() != EventState.PUBLISHED) {
             throw new ConflictException("Cannot rate unpublished event");
         }
