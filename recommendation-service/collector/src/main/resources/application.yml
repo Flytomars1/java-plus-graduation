@@ -1,6 +1,6 @@
 spring:
   application:
-    name: recommendation-collector
+    name: collector
   config:
     import: "configserver:"
   cloud:

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: recommendation-aggregator
+    name: analyzer
   config:
     import: "configserver:"
   cloud:
