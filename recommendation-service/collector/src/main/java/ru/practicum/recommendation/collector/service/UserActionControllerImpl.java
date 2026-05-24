@@ -1,6 +1,6 @@
 package ru.practicum.recommendation.collector.service;
 
-import ru.practicum.recommendation.proto.Empty;
+import ru.practicum.ewm.stats.proto.Empty;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.apache.avro.io.BinaryEncoder;
@@ -12,16 +12,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import ru.practicum.recommendation.avro.ActionTypeAvro;
 import ru.practicum.recommendation.avro.UserActionAvro;
-import ru.practicum.recommendation.proto.ActionType;
-import ru.practicum.recommendation.proto.UserAction;
-import ru.practicum.recommendation.proto.UserActionServiceGrpc;
+import ru.practicum.ewm.stats.proto.ActionTypeProto;
+import ru.practicum.ewm.stats.proto.UserActionProto;
+import ru.practicum.ewm.stats.proto.UserActionControllerGrpc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Instant;
 
 @GrpcService
-public class UserActionControllerImpl extends UserActionServiceGrpc.UserActionServiceImplBase {
+public class UserActionControllerImpl extends UserActionControllerGrpc.UserActionControllerImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(UserActionControllerImpl.class);
 
@@ -29,7 +29,7 @@ public class UserActionControllerImpl extends UserActionServiceGrpc.UserActionSe
     private KafkaTemplate<String, byte[]> kafkaTemplate;
 
     @Override
-    public void collectUserAction(UserAction request, StreamObserver<Empty> responseObserver) {
+    public void collectUserAction(UserActionProto request, StreamObserver<Empty> responseObserver) {
         log.info("Received user action: userId={}, eventId={}, actionType={}, timestamp={}",
                 request.getUserId(), request.getEventId(), request.getActionType(), request.getTimestamp());
 
@@ -67,7 +67,7 @@ public class UserActionControllerImpl extends UserActionServiceGrpc.UserActionSe
         return out.toByteArray();
     }
 
-    private ActionTypeAvro convertActionType(ActionType actionType) {
+    private ActionTypeAvro convertActionType(ActionTypeProto actionType) {
         switch (actionType) {
             case ACTION_VIEW:
                 return ActionTypeAvro.VIEW;

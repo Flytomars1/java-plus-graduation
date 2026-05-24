@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.recommendation.client.RecommendationClient;
-import ru.practicum.recommendation.proto.ActionType;
-import ru.practicum.recommendation.proto.RecommendedEvent;
+import ru.practicum.ewm.stats.proto.ActionTypeProto;
+import ru.practicum.ewm.stats.proto.RecommendedEvent;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,7 +19,7 @@ public class RecommendationGrpcService {
 
     public void sendView(long userId, long eventId) {
         try {
-            recommendationClient.sendUserAction(userId, eventId, ActionType.ACTION_VIEW, System.currentTimeMillis());
+            recommendationClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_VIEW, System.currentTimeMillis());
             log.debug("Sent VIEW action: userId={}, eventId={}", userId, eventId);
         } catch (Exception e) {
             log.warn("Failed to send VIEW action: {}", e.getMessage());
@@ -28,7 +28,7 @@ public class RecommendationGrpcService {
 
     public void sendLike(long userId, long eventId) {
         try {
-            recommendationClient.sendUserAction(userId, eventId, ActionType.ACTION_LIKE, System.currentTimeMillis());
+            recommendationClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_LIKE, System.currentTimeMillis());
             log.debug("Sent LIKE action: userId={}, eventId={}", userId, eventId);
         } catch (Exception e) {
             log.warn("Failed to send LIKE action: {}", e.getMessage());

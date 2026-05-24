@@ -2,7 +2,7 @@ package ru.practicum.recommendation.client;
 
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
-import ru.practicum.recommendation.proto.*;
+import ru.practicum.ewm.stats.proto.*;
 
 import java.util.Iterator;
 import java.util.List;
@@ -15,13 +15,13 @@ import java.util.stream.StreamSupport;
 public class RecommendationClient {
 
     @GrpcClient("analyzer")
-    private RecommendationsServiceGrpc.RecommendationsServiceBlockingStub recommendationsStub;
+    private RecommendationsControllerGrpc.RecommendationsControllerBlockingStub recommendationsStub;
 
     @GrpcClient("collector")
-    private UserActionServiceGrpc.UserActionServiceBlockingStub collectorStub;
+    private UserActionControllerGrpc.UserActionControllerBlockingStub collectorStub;
 
-    public void sendUserAction(long userId, long eventId, ActionType actionType, long timestamp) {
-        UserAction request = UserAction.newBuilder()
+    public void sendUserAction(long userId, long eventId, ActionTypeProto actionType, long timestamp) {
+        UserActionProto request = UserActionProto.newBuilder()
                 .setUserId(userId)
                 .setEventId(eventId)
                 .setActionType(actionType)
