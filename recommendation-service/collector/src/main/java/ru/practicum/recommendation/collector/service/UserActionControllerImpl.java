@@ -26,7 +26,7 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
     private static final Logger log = LoggerFactory.getLogger(UserActionControllerImpl.class);
 
     @Autowired
-    private KafkaTemplate<String, byte[]> kafkaTemplate;
+    private KafkaTemplate<Long, byte[]> kafkaTemplate;
 
     @Override
     public void collectUserAction(UserActionProto request, StreamObserver<Empty> responseObserver) {
@@ -44,7 +44,7 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
             byte[] data = serializeAvro(avroMessage);
 
             kafkaTemplate.send("stats.user-actions.v1",
-                    String.valueOf(request.getUserId()),
+                    request.getUserId(),
                     data);
 
             log.debug("Sent to Kafka: userId={}, eventId={}, actionType={}",
