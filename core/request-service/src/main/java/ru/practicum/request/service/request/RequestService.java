@@ -22,4 +22,6 @@ public interface RequestService {
     EventRequestStatusUpdateResult updateRequestStatus(Long eventId, EventRequestStatusUpdateRequest request);
 
     Map<Long, Long> getConfirmedRequestsCounts(List<Long> eventIds);
+
+    boolean hasRequest(Long userId, Long eventId);
 }

@@ -25,7 +25,7 @@ public interface EventService {
                                      LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                      Boolean onlyAvailable, String sort, int from, int size, String requestUri, String ip);
 
-    EventFullDto getPublicById(Long eventId, String requestUri, String ip);
+    EventFullDto getPublicById(Long eventId, String requestUri, String ip, Long userId);
 
     List<EventFullDto> searchAdmin(List<Long> users, List<String> states, List<Long> categories,
                                    LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size);
@@ -37,4 +37,7 @@ public interface EventService {
     EventShortDto getEventShortById(Long eventId);
 
     boolean isEventPublished(Long eventId);
+
+    List<EventShortDto> getRecommendations(Long userId, int from, int size);
+    void likeEvent(Long userId, Long eventId);
 }

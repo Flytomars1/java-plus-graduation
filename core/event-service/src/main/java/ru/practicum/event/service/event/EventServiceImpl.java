@@ -17,6 +17,7 @@ import ru.practicum.dto.rating.RatingDto;
 import ru.practicum.dto.request.EventRequestStatusUpdateRequest;
 import ru.practicum.dto.request.EventRequestStatusUpdateResult;
 import ru.practicum.dto.user.UserShortDto;
+import ru.practicum.event.service.event.recommendation.RecommendationGrpcService;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.event.mapper.EventMapper;
@@ -48,6 +49,7 @@ public class EventServiceImpl implements EventService {
     private final RequestClient requestClient;
     private final EventCircuitBreakerService circuitBreakerService;
     private final EventUpdater eventUpdater;
+    private final RecommendationGrpcService recommendationGrpcService;
 
     @Override
     @Transactional
@@ -204,10 +206,14 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto getPublicById(Long eventId, String requestUri, String ip) {
+    public EventFullDto getPublicById(Long eventId, String requestUri, String ip, Long userId) {
         Event e = eventRepository.findById(eventId).orElseThrow(() -> new NotFoundException("Event not found"));
         if (e.getState() != EventState.PUBLISHED) {
             throw new NotFoundException("Event must be published");
+        }
+
+        if (userId != null) {
+            recommendationGrpcService.sendView(userId, eventId);
         }
 
         safeAddHit("/events/" + eventId, ip);
@@ -264,6 +270,54 @@ public class EventServiceImpl implements EventService {
         return eventRepository.findById(eventId)
                 .map(event -> event.getState() == EventState.PUBLISHED)
                 .orElse(false);
+    }
+
+    @Override
+    public List<EventShortDto> getRecommendations(Long userId, int from, int size) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+
+        List<Long> recommendedEventIds = recommendationGrpcService.getRecommendationsForUser(userId, from + size);
+
+        if (recommendedEventIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> paginatedIds = recommendedEventIds.stream()
+                .skip(from)
+                .limit(size)
+                .collect(Collectors.toList());
+
+        List<Event> events = eventRepository.findAllById(paginatedIds);
+
+        Map<Long, Event> eventMap = events.stream()
+                .collect(Collectors.toMap(Event::getId, Function.identity()));
+
+        List<Event> orderedEvents = paginatedIds.stream()
+                .map(eventMap::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        return enrichShortDtos(orderedEvents);
+    }
+
+    @Override
+    @Transactional
+    public void likeEvent(Long userId, Long eventId) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new NotFoundException("Event not found"));
+
+        if (event.getState() != EventState.PUBLISHED) {
+            throw new ConflictException("Cannot like unpublished event");
+        }
+
+        boolean hasRequest = requestClient.hasRequest(userId, eventId);
+        if (!hasRequest) {
+            throw new IllegalArgumentException("User can only like events they have visited");
+        }
+
+        recommendationGrpcService.sendLike(userId, eventId);
     }
 
     private EventDataBundle prepareEventDataBundle(List<Event> events) {
