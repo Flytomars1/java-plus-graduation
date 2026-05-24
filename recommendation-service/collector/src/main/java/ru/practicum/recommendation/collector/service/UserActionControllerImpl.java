@@ -32,10 +32,10 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
 
         try {
             Map<String, Object> jsonMessage = new HashMap<>();
-            jsonMessage.put("userId", request.getUserId());
-            jsonMessage.put("eventId", request.getEventId());
-            jsonMessage.put("actionType", request.getActionType().toString());
-            jsonMessage.put("timestamp", request.getTimestamp());
+            jsonMessage.put("user", request.getUserId());
+            jsonMessage.put("event", request.getEventId());
+            jsonMessage.put("type", request.getActionType().toString());
+            jsonMessage.put("timestamp", Instant.now().toString());
 
             String json = objectMapper.writeValueAsString(jsonMessage);
 
