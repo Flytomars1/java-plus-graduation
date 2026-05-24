@@ -23,16 +23,8 @@
         <module>analyzer</module>
     </modules>
 
-    <properties>
-        <avro.version>1.11.3</avro.version>
-        <protobuf.version>3.21.12</protobuf.version>
-        <grpc.version>1.54.1</grpc.version>
-        <grpc-spring.version>3.1.0.RELEASE</grpc-spring.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
-            <!-- Внутренние модули -->
             <dependency>
                 <groupId>ru.practicum</groupId>
                 <artifactId>avro-schemas</artifactId>
@@ -47,30 +39,6 @@
                 <groupId>ru.practicum</groupId>
                 <artifactId>client</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-
-            <!-- Общие зависимости -->
-            <dependency>
-                <groupId>org.apache.avro</groupId>
-                <artifactId>avro</artifactId>
-                <version>${avro.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-bom</artifactId>
-                <version>${grpc.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>net.devh</groupId>
-                <artifactId>grpc-server-spring-boot-starter</artifactId>
-                <version>${grpc-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.devh</groupId>
-                <artifactId>grpc-client-spring-boot-starter</artifactId>
-                <version>${grpc-spring.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

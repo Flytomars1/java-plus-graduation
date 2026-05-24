@@ -2,8 +2,8 @@ package ru.practicum.recommendation.analyzer.mapper;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.recommendation.analyzer.model.UserActionEntity;
-import ru.practicum.recommendation.avro.ActionTypeAvro;
-import ru.practicum.recommendation.avro.UserActionAvro;
+import ru.practicum.ewm.stats.avro.ActionTypeAvro;
+import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 @Component
 public class UserActionMapper {

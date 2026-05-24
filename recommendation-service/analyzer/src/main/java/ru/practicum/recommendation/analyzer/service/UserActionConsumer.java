@@ -11,7 +11,8 @@ import org.springframework.stereotype.Component;
 import ru.practicum.recommendation.analyzer.mapper.UserActionMapper;
 import ru.practicum.recommendation.analyzer.model.UserActionEntity;
 import ru.practicum.recommendation.analyzer.repository.UserActionRepository;
-import ru.practicum.recommendation.avro.UserActionAvro;
+import ru.practicum.ewm.stats.avro.UserActionAvro;
+import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 
 import java.io.IOException;
 

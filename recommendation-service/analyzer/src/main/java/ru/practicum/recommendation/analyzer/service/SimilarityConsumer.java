@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import ru.practicum.recommendation.analyzer.mapper.EventSimilarityMapper;
 import ru.practicum.recommendation.analyzer.model.EventSimilarityEntity;
 import ru.practicum.recommendation.analyzer.repository.EventSimilarityRepository;
-import ru.practicum.recommendation.avro.EventSimilarityAvro;
+import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 
 import java.io.IOException;
 

@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import ru.practicum.recommendation.avro.UserActionAvro;
+import ru.practicum.ewm.stats.avro.UserActionAvro;
+import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 
 import java.io.IOException;
 

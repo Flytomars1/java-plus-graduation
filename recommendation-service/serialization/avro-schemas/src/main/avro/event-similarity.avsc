@@ -1,5 +1,5 @@
 {
-  "namespace": "ru.practicum.recommendation.avro",
+  "namespace": "ru.practicum.ewm.stats.avro",
   "type": "record",
   "name": "EventSimilarityAvro",
   "fields": [

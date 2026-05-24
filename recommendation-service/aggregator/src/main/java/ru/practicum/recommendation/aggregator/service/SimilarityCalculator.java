@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-import ru.practicum.recommendation.avro.ActionTypeAvro;
-import ru.practicum.recommendation.avro.EventSimilarityAvro;
-import ru.practicum.recommendation.avro.UserActionAvro;
+import ru.practicum.ewm.stats.avro.ActionTypeAvro;
+import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
+import ru.practicum.ewm.stats.avro.UserActionAvro;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
