@@ -29,14 +29,18 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
 
     @Override
     public void collectUserAction(UserActionProto request, StreamObserver<Empty> responseObserver) {
-        long timestamp = request.getTimestamp();
+        long timestampMillis = request.getTimestamp().getSeconds() * 1000L
+                + request.getTimestamp().getNanos() / 1_000_000;
+
+        log.info("Received user action: userId={}, eventId={}, actionType={}, timestamp={}",
+                request.getUserId(), request.getEventId(), request.getActionType(), timestampMillis);
 
         try {
             UserActionAvro avroMessage = UserActionAvro.newBuilder()
                     .setUserId(request.getUserId())
                     .setEventId(request.getEventId())
                     .setActionType(convertActionType(request.getActionType()))
-                    .setTimestamp(timestamp)
+                    .setTimestamp(timestampMillis)
                     .build();
 
             byte[] data = serializeAvro(avroMessage);

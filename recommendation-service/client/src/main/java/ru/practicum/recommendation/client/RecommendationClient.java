@@ -10,6 +10,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import com.google.protobuf.Timestamp;
 
 @Component
 public class RecommendationClient {
@@ -20,7 +21,12 @@ public class RecommendationClient {
     @GrpcClient("collector")
     private UserActionControllerGrpc.UserActionControllerBlockingStub collectorStub;
 
-    public void sendUserAction(long userId, long eventId, ActionTypeProto actionType, long timestamp) {
+    public void sendUserAction(long userId, long eventId, ActionTypeProto actionType, long timestampMillis) {
+        Timestamp timestamp = Timestamp.newBuilder()
+                .setSeconds(timestampMillis / 1000)
+                .setNanos((int)((timestampMillis % 1000) * 1_000_000))
+                .build();
+
         UserActionProto request = UserActionProto.newBuilder()
                 .setUserId(userId)
                 .setEventId(eventId)
