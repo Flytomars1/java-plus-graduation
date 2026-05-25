@@ -27,13 +27,13 @@ public class UserActionMapper {
     private double getWeight(ActionTypeAvro actionType) {
         switch (actionType) {
             case VIEW:
-                return 1.0;
+                return 0.4;
             case REGISTER:
-                return 3.0;
+                return 1.2;
             case LIKE:
-                return 5.0;
+                return 2.0;
             default:
-                return 1.0;
+                return 0.4;
         }
     }
 }
