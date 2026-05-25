@@ -1,10 +1,10 @@
 package ru.practicum.recommendation.collector.service;
 
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.Schema;
 import ru.practicum.ewm.stats.proto.Empty;
 import io.grpc.stub.StreamObserver;
@@ -32,25 +32,22 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
 
     @Override
     public void collectUserAction(UserActionProto request, StreamObserver<Empty> responseObserver) {
-        log.info("Received user action: userId={}, eventId={}, actionType={}, timestamp={}",
-                request.getUserId(), request.getEventId(), request.getActionType(), request.getTimestamp());
+        long timestamp = request.getTimestamp();
 
         try {
             Schema schema = UserActionAvro.getClassSchema();
             GenericRecord avroRecord = new GenericData.Record(schema);
+
             avroRecord.put("userId", request.getUserId());
             avroRecord.put("eventId", request.getEventId());
-            avroRecord.put("actionType", convertActionType(request.getActionType()));
-            avroRecord.put("timestamp", request.getTimestamp());
+            ActionTypeAvro actionTypeAvro = convertActionType(request.getActionType());
+            avroRecord.put("actionType", actionTypeAvro);
+            avroRecord.put("timestamp", timestamp);
 
             byte[] data = serializeAvro(avroRecord, schema);
 
-            kafkaTemplate.send("stats.user-actions.v1",
-                    request.getUserId(),
-                    data);
+            kafkaTemplate.send("stats.user-actions.v1", request.getUserId(), data);
 
-            log.debug("Sent to Kafka: userId={}, eventId={}, actionType={}, timestamp={}",
-                    request.getUserId(), request.getEventId(), request.getActionType(), request.getTimestamp());
 
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
@@ -62,12 +59,13 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
     }
 
     private byte[] serializeAvro(GenericRecord data, Schema schema) throws IOException {
-        SpecificDatumWriter<GenericRecord> writer = new SpecificDatumWriter<>(schema);
+        GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<>(schema);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
         writer.write(data, encoder);
         encoder.flush();
-        return out.toByteArray();
+        byte[] result = out.toByteArray();
+        return result;
     }
 
     private ActionTypeAvro convertActionType(ActionTypeProto actionType) {
