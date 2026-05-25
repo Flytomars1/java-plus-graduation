@@ -19,6 +19,15 @@ public interface UserActionRepository extends JpaRepository<UserActionEntity, Lo
     @Query("SELECT DISTINCT u.eventId FROM UserActionEntity u WHERE u.userId = :userId")
     List<Long> findEventIdsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT u.eventId, SUM(u.weight) FROM UserActionEntity u WHERE u.eventId IN :eventIds GROUP BY u.eventId")
+    @Query(value = """
+    SELECT event_id, SUM(max_weight)
+    FROM (
+        SELECT event_id, user_id, MAX(weight) as max_weight
+        FROM user_actions
+        WHERE event_id IN :eventIds
+        GROUP BY event_id, user_id
+    ) sub
+    GROUP BY event_id
+    """, nativeQuery = true)
     List<Object[]> sumWeightsByEventIds(@Param("eventIds") List<Long> eventIds);
 }
