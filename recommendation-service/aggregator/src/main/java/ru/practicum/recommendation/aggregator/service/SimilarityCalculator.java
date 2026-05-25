@@ -97,7 +97,7 @@ public class SimilarityCalculator {
         if (sumA == 0 || sumB == 0) return 0.0;
 
         double rawScore = sMin / (Math.sqrt(sumA) * Math.sqrt(sumB));
-        return Math.round(rawScore * 100.0) / 100.0;
+        return rawScore;
     }
 
     private void sendSimilarity(long eventA, long eventB, double score) {
@@ -124,14 +124,10 @@ public class SimilarityCalculator {
 
     private double getWeightByActionType(ActionTypeAvro actionType) {
         switch (actionType) {
-            case VIEW:
-                return 1.0;
-            case REGISTER:
-                return 3.0;
-            case LIKE:
-                return 5.0;
-            default:
-                return 1.0;
+            case VIEW: return 0.4;
+            case REGISTER: return 0.8;
+            case LIKE: return 1.0;
+            default: return 0.4;
         }
     }
 
