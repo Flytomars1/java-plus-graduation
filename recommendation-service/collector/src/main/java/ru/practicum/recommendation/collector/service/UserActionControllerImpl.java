@@ -1,11 +1,14 @@
 package ru.practicum.recommendation.collector.service;
 
-import ru.practicum.ewm.stats.proto.Empty;
-import io.grpc.stub.StreamObserver;
-import net.devh.boot.grpc.server.service.GrpcService;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.avro.Schema;
+import ru.practicum.ewm.stats.proto.Empty;
+import io.grpc.stub.StreamObserver;
+import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +21,6 @@ import ru.practicum.ewm.stats.proto.UserActionControllerGrpc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Instant;
 
 @GrpcService
 public class UserActionControllerImpl extends UserActionControllerGrpc.UserActionControllerImplBase {
@@ -34,21 +36,21 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
                 request.getUserId(), request.getEventId(), request.getActionType(), request.getTimestamp());
 
         try {
-            UserActionAvro avroMessage = UserActionAvro.newBuilder()
-                    .setUserId(request.getUserId())
-                    .setEventId(request.getEventId())
-                    .setActionType(convertActionType(request.getActionType()))
-                    .setTimestamp(Instant.ofEpochMilli(request.getTimestamp()))
-                    .build();
+            Schema schema = UserActionAvro.getClassSchema();
+            GenericRecord avroRecord = new GenericData.Record(schema);
+            avroRecord.put("userId", request.getUserId());
+            avroRecord.put("eventId", request.getEventId());
+            avroRecord.put("actionType", convertActionType(request.getActionType()));
+            avroRecord.put("timestamp", request.getTimestamp());
 
-            byte[] data = serializeAvro(avroMessage);
+            byte[] data = serializeAvro(avroRecord, schema);
 
             kafkaTemplate.send("stats.user-actions.v1",
                     request.getUserId(),
                     data);
 
-            log.debug("Sent to Kafka: userId={}, eventId={}, actionType={}",
-                    request.getUserId(), request.getEventId(), request.getActionType());
+            log.debug("Sent to Kafka: userId={}, eventId={}, actionType={}, timestamp={}",
+                    request.getUserId(), request.getEventId(), request.getActionType(), request.getTimestamp());
 
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
@@ -59,8 +61,8 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
         }
     }
 
-    private byte[] serializeAvro(UserActionAvro data) throws IOException {
-        SpecificDatumWriter<UserActionAvro> writer = new SpecificDatumWriter<>(UserActionAvro.getClassSchema());
+    private byte[] serializeAvro(GenericRecord data, Schema schema) throws IOException {
+        SpecificDatumWriter<GenericRecord> writer = new SpecificDatumWriter<>(schema);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
         writer.write(data, encoder);
@@ -70,12 +72,9 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
 
     private ActionTypeAvro convertActionType(ActionTypeProto actionType) {
         switch (actionType) {
-            case ACTION_VIEW:
-                return ActionTypeAvro.VIEW;
-            case ACTION_REGISTER:
-                return ActionTypeAvro.REGISTER;
-            case ACTION_LIKE:
-                return ActionTypeAvro.LIKE;
+            case ACTION_VIEW: return ActionTypeAvro.VIEW;
+            case ACTION_REGISTER: return ActionTypeAvro.REGISTER;
+            case ACTION_LIKE: return ActionTypeAvro.LIKE;
             default:
                 log.warn("Unknown action type: {}, defaulting to VIEW", actionType);
                 return ActionTypeAvro.VIEW;
