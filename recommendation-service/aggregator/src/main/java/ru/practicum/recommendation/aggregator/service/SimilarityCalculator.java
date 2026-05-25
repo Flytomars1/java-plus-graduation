@@ -99,7 +99,7 @@ public class SimilarityCalculator {
                 .setEventA(first)
                 .setEventB(second)
                 .setScore(score)
-                .setTimestamp(Instant.now())
+                .setTimestamp(Instant.now().toEpochMilli())
                 .build();
 
         try {

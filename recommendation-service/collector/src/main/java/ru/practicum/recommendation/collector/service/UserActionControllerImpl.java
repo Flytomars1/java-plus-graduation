@@ -1,11 +1,8 @@
 package ru.practicum.recommendation.collector.service;
 
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericDatumWriter;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.Schema;
+import org.apache.avro.specific.SpecificDatumWriter;
 import ru.practicum.ewm.stats.proto.Empty;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -35,19 +32,16 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
         long timestamp = request.getTimestamp();
 
         try {
-            Schema schema = UserActionAvro.getClassSchema();
-            GenericRecord avroRecord = new GenericData.Record(schema);
+            UserActionAvro avroMessage = UserActionAvro.newBuilder()
+                    .setUserId(request.getUserId())
+                    .setEventId(request.getEventId())
+                    .setActionType(convertActionType(request.getActionType()))
+                    .setTimestamp(timestamp)
+                    .build();
 
-            avroRecord.put("userId", request.getUserId());
-            avroRecord.put("eventId", request.getEventId());
-            ActionTypeAvro actionTypeAvro = convertActionType(request.getActionType());
-            avroRecord.put("actionType", actionTypeAvro);
-            avroRecord.put("timestamp", timestamp);
-
-            byte[] data = serializeAvro(avroRecord, schema);
+            byte[] data = serializeAvro(avroMessage);
 
             kafkaTemplate.send("stats.user-actions.v1", request.getUserId(), data);
-
 
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
@@ -58,14 +52,13 @@ public class UserActionControllerImpl extends UserActionControllerGrpc.UserActio
         }
     }
 
-    private byte[] serializeAvro(GenericRecord data, Schema schema) throws IOException {
-        GenericDatumWriter<GenericRecord> writer = new GenericDatumWriter<>(schema);
+    private byte[] serializeAvro(UserActionAvro data) throws IOException {
+        SpecificDatumWriter<UserActionAvro> writer = new SpecificDatumWriter<>(UserActionAvro.class);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
         writer.write(data, encoder);
         encoder.flush();
-        byte[] result = out.toByteArray();
-        return result;
+        return out.toByteArray();
     }
 
     private ActionTypeAvro convertActionType(ActionTypeProto actionType) {

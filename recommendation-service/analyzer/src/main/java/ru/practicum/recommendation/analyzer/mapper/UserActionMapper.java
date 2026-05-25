@@ -5,6 +5,8 @@ import ru.practicum.recommendation.analyzer.model.UserActionEntity;
 import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
+import java.time.Instant;
+
 @Component
 public class UserActionMapper {
 
@@ -18,7 +20,7 @@ public class UserActionMapper {
                 .eventId(avro.getEventId())
                 .actionType(avro.getActionType().toString())
                 .weight(getWeight(avro.getActionType()))
-                .timestamp(avro.getTimestamp())
+                .timestamp(Instant.ofEpochMilli(avro.getTimestamp()))
                 .build();
     }
 

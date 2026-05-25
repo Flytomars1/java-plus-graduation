@@ -13,6 +13,6 @@
         "symbols": ["VIEW", "REGISTER", "LIKE"]
       }
     },
-    { "name": "timestamp", "type": { "type": "long", "logicalType": "timestamp-millis" } }
+    { "name": "timestamp", "type": "long" }
   ]
 }
