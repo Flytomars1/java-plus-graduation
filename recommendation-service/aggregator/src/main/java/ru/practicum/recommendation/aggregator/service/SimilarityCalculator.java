@@ -51,8 +51,6 @@ public class SimilarityCalculator {
     private void updateSimilarities(long eventA, long userId, Double oldWeight, double newWeight) {
         double delta = (oldWeight == null ? newWeight : newWeight - oldWeight);
 
-        eventTotalSums.merge(eventA, delta, Double::sum);
-
         for (Map.Entry<Long, Map<Long, Double>> entry : userEventWeights.entrySet()) {
             long eventB = entry.getKey();
             if (eventB == eventA) continue;
@@ -61,11 +59,18 @@ public class SimilarityCalculator {
             if (weightB == null) continue;
 
             double newMin = Math.min(newWeight, weightB);
-            double oldMin = oldWeight != null ? Math.min(oldWeight, weightB) : 0;
+            double oldMin = (oldWeight != null) ? Math.min(oldWeight, weightB) : 0.0;
             updateMinWeightSum(eventA, eventB, newMin, oldMin);
+        }
+
+        eventTotalSums.merge(eventA, delta, Double::sum);
+
+        for (Map.Entry<Long, Map<Long, Double>> entry : userEventWeights.entrySet()) {
+            long eventB = entry.getKey();
+            if (eventB == eventA) continue;
+            if (entry.getValue().get(userId) == null) continue;
 
             double newScore = calculateSimilarity(eventA, eventB);
-
             sendSimilarity(eventA, eventB, newScore);
         }
     }
@@ -85,10 +90,14 @@ public class SimilarityCalculator {
 
         Double sumA = eventTotalSums.getOrDefault(eventA, 0.0);
         Double sumB = eventTotalSums.getOrDefault(eventB, 0.0);
-        Double sMin = minWeightsSums.getOrDefault(first, new ConcurrentHashMap<>()).getOrDefault(second, 0.0);
+
+        Map<Long, Double> innerMap = minWeightsSums.get(first);
+        Double sMin = (innerMap != null) ? innerMap.get(second) : 0.0;
 
         if (sumA == 0 || sumB == 0) return 0.0;
-        return sMin / (Math.sqrt(sumA) * Math.sqrt(sumB));
+
+        double rawScore = sMin / (Math.sqrt(sumA) * Math.sqrt(sumB));
+        return Math.round(rawScore * 100.0) / 100.0;
     }
 
     private void sendSimilarity(long eventA, long eventB, double score) {
