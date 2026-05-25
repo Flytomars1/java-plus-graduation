@@ -29,9 +29,9 @@ public class UserActionMapper {
             case VIEW:
                 return 0.4;
             case REGISTER:
-                return 1.2;
+                return 0.8;
             case LIKE:
-                return 2.0;
+                return 1.0;
             default:
                 return 0.4;
         }
