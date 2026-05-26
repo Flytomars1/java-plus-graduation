@@ -1,5 +1,6 @@
 package ru.practicum.recommendation.client;
 
+import com.google.protobuf.Internal;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.stats.proto.*;
@@ -21,7 +22,7 @@ public class RecommendationClient {
     @GrpcClient("collector")
     private UserActionControllerGrpc.UserActionControllerBlockingStub collectorStub;
 
-    public void sendUserAction(long userId, long eventId, ActionTypeProto actionType, long timestampMillis) {
+    public void sendUserAction(Long userId, Long eventId, ActionTypeProto actionType, Long timestampMillis) {
         Timestamp timestamp = Timestamp.newBuilder()
                 .setSeconds(timestampMillis / 1000)
                 .setNanos((int)((timestampMillis % 1000) * 1_000_000))
@@ -37,7 +38,7 @@ public class RecommendationClient {
         collectorStub.collectUserAction(request);
     }
 
-    public Stream<RecommendedEvent> getRecommendationsForUser(long userId, int maxResults) {
+    public Stream<RecommendedEvent> getRecommendationsForUser(Long userId, Integer maxResults) {
         UserPredictionsRequest request = UserPredictionsRequest.newBuilder()
                 .setUserId(userId)
                 .setMaxResults(maxResults)
@@ -47,7 +48,7 @@ public class RecommendationClient {
         return toStream(iterator);
     }
 
-    public Stream<RecommendedEvent> getSimilarEvents(long eventId, long userId, int maxResults) {
+    public Stream<RecommendedEvent> getSimilarEvents(Long eventId, Long userId, Integer maxResults) {
         SimilarEventsRequest request = SimilarEventsRequest.newBuilder()
                 .setEventId(eventId)
                 .setUserId(userId)

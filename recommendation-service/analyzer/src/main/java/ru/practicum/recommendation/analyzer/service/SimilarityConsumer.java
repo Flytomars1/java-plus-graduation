@@ -1,10 +1,9 @@
 package ru.practicum.recommendation.analyzer.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificDatumReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -15,10 +14,9 @@ import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class SimilarityConsumer {
-
-    private static final Logger log = LoggerFactory.getLogger(SimilarityConsumer.class);
 
     @Autowired
     private EventSimilarityRepository eventSimilarityRepository;

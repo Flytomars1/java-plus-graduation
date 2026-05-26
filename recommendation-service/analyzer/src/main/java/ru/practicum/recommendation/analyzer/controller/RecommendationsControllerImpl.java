@@ -1,9 +1,8 @@
 package ru.practicum.recommendation.analyzer.controller;
 
 import io.grpc.stub.StreamObserver;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import ru.practicum.recommendation.analyzer.service.RecommendationService;
 import ru.practicum.ewm.stats.proto.*;
@@ -11,10 +10,9 @@ import ru.practicum.ewm.stats.proto.*;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @GrpcService
 public class RecommendationsControllerImpl extends RecommendationsControllerGrpc.RecommendationsControllerImplBase {
-
-    private static final Logger log = LoggerFactory.getLogger(RecommendationsControllerImpl.class);
 
     @Autowired
     private RecommendationService recommendationService;

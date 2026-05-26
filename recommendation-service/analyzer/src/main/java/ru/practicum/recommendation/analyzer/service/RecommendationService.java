@@ -1,7 +1,6 @@
 package ru.practicum.recommendation.analyzer.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.recommendation.analyzer.model.EventSimilarityEntity;
@@ -12,10 +11,9 @@ import ru.practicum.recommendation.analyzer.repository.UserActionRepository;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class RecommendationService {
-
-    private static final Logger log = LoggerFactory.getLogger(RecommendationService.class);
 
     @Autowired
     private UserActionRepository userActionRepository;
@@ -23,7 +21,7 @@ public class RecommendationService {
     @Autowired
     private EventSimilarityRepository eventSimilarityRepository;
 
-    public List<Map.Entry<Long, Double>> getRecommendationsForUser(long userId, int maxResults) {
+    public List<Map.Entry<Long, Double>> getRecommendationsForUser(Long userId, Integer maxResults) {
         List<Long> interactedEventsList = userActionRepository.findEventIdsByUserId(userId);
 
         if (interactedEventsList.isEmpty()) {
@@ -73,7 +71,7 @@ public class RecommendationService {
                 .collect(Collectors.toList());
     }
 
-    public List<Map.Entry<Long, Double>> getSimilarEvents(long eventId, long userId, int maxResults) {
+    public List<Map.Entry<Long, Double>> getSimilarEvents(Long eventId, Long userId, Integer maxResults) {
         List<Long> interactedEvents = userActionRepository.findEventIdsByUserId(userId);
         List<EventSimilarityEntity> similarEvents = eventSimilarityRepository.findSimilarEvents(eventId, 0.0);
         Set<Long> interactedSet = new HashSet<>(interactedEvents);

@@ -17,7 +17,7 @@ public class RecommendationGrpcService {
 
     private final RecommendationClient recommendationClient;
 
-    public void sendView(long userId, long eventId) {
+    public void sendView(Long userId, Long eventId) {
         try {
             recommendationClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_VIEW, System.currentTimeMillis());
             log.debug("Sent VIEW action: userId={}, eventId={}", userId, eventId);
@@ -26,7 +26,7 @@ public class RecommendationGrpcService {
         }
     }
 
-    public void sendLike(long userId, long eventId) {
+    public void sendLike(Long userId, Long eventId) {
         try {
             recommendationClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_LIKE, System.currentTimeMillis());
             log.debug("Sent LIKE action: userId={}, eventId={}", userId, eventId);
@@ -35,7 +35,7 @@ public class RecommendationGrpcService {
         }
     }
 
-    public List<Long> getRecommendationsForUser(long userId, int maxResults) {
+    public List<Long> getRecommendationsForUser(Long userId, Integer maxResults) {
         try {
             return recommendationClient.getRecommendationsForUser(userId, maxResults)
                     .map(RecommendedEvent::getEventId)

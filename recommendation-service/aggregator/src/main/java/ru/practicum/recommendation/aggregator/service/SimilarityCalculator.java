@@ -1,33 +1,30 @@
 package ru.practicum.recommendation.aggregator.service;
 
-import org.apache.avro.io.BinaryEncoder;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.specific.SpecificDatumWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.core.KafkaTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 public class SimilarityCalculator {
 
-    private static final Logger log = LoggerFactory.getLogger(SimilarityCalculator.class);
-    private final Map<Long, Map<Long, Double>> userEventWeights = new ConcurrentHashMap<>();
-    private final Map<Long, Double> eventTotalSums = new ConcurrentHashMap<>();
-    private final Map<Long, Map<Long, Double>> minWeightsSums = new ConcurrentHashMap<>();
+    private final Map<Long, Map<Long, Double>> userEventWeights;
+    private final Map<Long, Double> eventTotalSums;
+    private final Map<Long, Map<Long, Double>> minWeightsSums;
+    private final KafkaProducerService kafkaProducerService;
 
-    @Autowired
-    private KafkaTemplate<String, byte[]> kafkaTemplate;
+    public SimilarityCalculator(KafkaProducerService kafkaProducerService) {
+        this.userEventWeights = new ConcurrentHashMap<>();
+        this.eventTotalSums = new ConcurrentHashMap<>();
+        this.minWeightsSums = new ConcurrentHashMap<>();
+        this.kafkaProducerService = kafkaProducerService;
+    }
 
     public void processUserAction(UserActionAvro action) {
         long eventId = action.getEventId();
@@ -111,15 +108,7 @@ public class SimilarityCalculator {
                 .setTimestamp(Instant.now().toEpochMilli())
                 .build();
 
-        try {
-            byte[] data = serialize(similarity);
-            kafkaTemplate.send("stats.events-similarity.v1",
-                    String.valueOf(first),
-                    data);
-            log.debug("Sent similarity: eventA={}, eventB={}, score={}", first, second, score);
-        } catch (Exception e) {
-            log.error("Error sending similarity", e);
-        }
+        kafkaProducerService.sendSimilarity(similarity);
     }
 
     private double getWeightByActionType(ActionTypeAvro actionType) {
@@ -129,14 +118,5 @@ public class SimilarityCalculator {
             case LIKE: return 1.0;
             default: return 0.4;
         }
-    }
-
-    private byte[] serialize(EventSimilarityAvro data) throws IOException {
-        SpecificDatumWriter<EventSimilarityAvro> writer = new SpecificDatumWriter<>(EventSimilarityAvro.getClassSchema());
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
-        writer.write(data, encoder);
-        encoder.flush();
-        return out.toByteArray();
     }
 }

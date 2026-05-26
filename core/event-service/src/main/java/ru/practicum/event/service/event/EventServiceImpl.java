@@ -147,7 +147,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> getUserEvents(Long userId, int from, int size) {
+    public List<EventShortDto> getUserEvents(Long userId, Integer from, Integer size) {
         if (!Boolean.TRUE.equals(userClient.userExists(userId))) {
             throw new NotFoundException("User not found");
         }
@@ -168,7 +168,7 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<EventShortDto> searchPublic(String text, List<Long> categories, Boolean paid,
                                             LocalDateTime rangeStart, LocalDateTime rangeEnd,
-                                            Boolean onlyAvailable, String sort, int from, int size,
+                                            Boolean onlyAvailable, String sort, Integer from, Integer size,
                                             String requestUri, String ip) {
 
         safeAddHit(requestUri, ip);
@@ -228,7 +228,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventFullDto> searchAdmin(List<Long> users, List<String> states, List<Long> categories,
-                                          LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
+                                          LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size) {
         Specification<Event> spec = Specification.where(betweenDates(rangeStart, rangeEnd))
                 .and(users == null || users.isEmpty() ? null : initiatorsIn(users))
                 .and(states == null || states.isEmpty() ? null : stateIn(states))
@@ -273,7 +273,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> getRecommendations(Long userId, int from, int size) {
+    public List<EventShortDto> getRecommendations(Long userId, Integer from, Integer size) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID is required");
         }

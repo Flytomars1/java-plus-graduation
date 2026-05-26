@@ -53,7 +53,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getUsers(List<Long> ids, int from, int size) {
+    public List<UserDto> getUsers(List<Long> ids, Integer from, Integer size) {
         log.info("Getting users with ids: {}, from: {}, size: {}", ids, from, size);
 
         validatePaginationParams(from, size);

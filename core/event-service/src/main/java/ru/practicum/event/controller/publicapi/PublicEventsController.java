@@ -48,8 +48,8 @@ public class PublicEventsController {
     @GetMapping("/recommendations")
     public List<EventShortDto> getRecommendations(
             @RequestHeader("X-EWM-USER-ID") Long userId,
-            @RequestParam(defaultValue = "0") int from,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") Integer from,
+            @RequestParam(defaultValue = "10") Integer size) {
         return service.getRecommendations(userId, from, size);
     }
 

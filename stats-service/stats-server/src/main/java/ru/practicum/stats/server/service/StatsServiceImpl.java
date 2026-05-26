@@ -42,7 +42,7 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique) {
+    public List<ViewStatsDto> getStats(String start, String end, List<String> uris, Boolean unique) {
         LocalDateTime startDate = parseDateTime(start);
         LocalDateTime endDate = parseDateTime(end);
 
