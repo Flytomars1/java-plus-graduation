@@ -10,7 +10,7 @@ public interface UserService {
 
     UserDto createUser(NewUserRequest newUserRequest);
 
-    List<UserDto> getUsers(List<Long> ids, int from, int size);
+    List<UserDto> getUsers(List<Long> ids, Integer from, Integer size);
 
     void deleteUser(Long userId);
 
@@ -18,5 +18,5 @@ public interface UserService {
 
     boolean existsById(Long userId);
 
-    List<User> getUsersByIds(List<Long> userIds);  // ← добавить
+    List<User> getUsersByIds(List<Long> userIds);
 }

@@ -23,4 +23,7 @@ public interface RequestInternalApi {
     EventRequestStatusUpdateResult updateRequestStatus(
             @PathVariable("eventId") Long eventId,
             @RequestBody EventRequestStatusUpdateRequest request);
+
+    @GetMapping("/has-request")
+    boolean hasRequest(@RequestParam("userId") Long userId, @RequestParam("eventId") Long eventId);
 }

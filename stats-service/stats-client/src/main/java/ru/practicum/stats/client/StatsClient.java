@@ -36,11 +36,11 @@ public class StatsClient {
         this.retryTemplate = new RetryTemplate();
 
         FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(3000L);
+        fixedBackOffPolicy.setBackOffPeriod(500L);
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
 
         MaxAttemptsRetryPolicy retryPolicy = new MaxAttemptsRetryPolicy();
-        retryPolicy.setMaxAttempts(3);
+        retryPolicy.setMaxAttempts(2);
         retryTemplate.setRetryPolicy(retryPolicy);
     }
 

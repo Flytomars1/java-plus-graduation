@@ -32,6 +32,14 @@ logging:
     ru.practicum.request: DEBUG
     org.springframework.cloud.config: DEBUG
 
+grpc:
+  client:
+    collector:
+      address: 'discovery:///recommendation-collector'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
 resilience4j:
   circuitbreaker:
     instances:

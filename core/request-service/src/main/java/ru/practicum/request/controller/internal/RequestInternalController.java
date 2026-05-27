@@ -44,4 +44,10 @@ public class RequestInternalController {
         log.debug("Internal API: get confirmed requests counts for events: {}", eventIds);
         return requestService.getConfirmedRequestsCounts(eventIds);
     }
+
+    @GetMapping("/has-request")
+    public boolean hasRequest(@RequestParam Long userId, @RequestParam Long eventId) {
+        log.debug("Internal API: check if user {} has request for event {}", userId, eventId);
+        return requestService.hasRequest(userId, eventId);
+    }
 }

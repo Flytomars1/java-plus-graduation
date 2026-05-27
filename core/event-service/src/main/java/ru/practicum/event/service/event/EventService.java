@@ -15,7 +15,7 @@ public interface EventService {
 
     EventFullDto getUserEvent(Long userId, Long eventId);
 
-    List<EventShortDto> getUserEvents(Long userId, int from, int size);
+    List<EventShortDto> getUserEvents(Long userId, Integer from, Integer size);
 
     List<ParticipationRequestDto> getEventParticipants(Long userId, Long eventId);
 
@@ -23,12 +23,12 @@ public interface EventService {
 
     List<EventShortDto> searchPublic(String text, List<Long> categories, Boolean paid,
                                      LocalDateTime rangeStart, LocalDateTime rangeEnd,
-                                     Boolean onlyAvailable, String sort, int from, int size, String requestUri, String ip);
+                                     Boolean onlyAvailable, String sort, Integer from, Integer size, String requestUri, String ip);
 
-    EventFullDto getPublicById(Long eventId, String requestUri, String ip);
+    EventFullDto getPublicById(Long eventId, String requestUri, String ip, Long userId);
 
     List<EventFullDto> searchAdmin(List<Long> users, List<String> states, List<Long> categories,
-                                   LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size);
+                                   LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size);
 
     EventFullDto updateByAdmin(Long eventId, UpdateEventAdminRequest dto);
 
@@ -37,4 +37,7 @@ public interface EventService {
     EventShortDto getEventShortById(Long eventId);
 
     boolean isEventPublished(Long eventId);
+
+    List<EventShortDto> getRecommendations(Long userId, Integer from, Integer size);
+    void likeEvent(Long userId, Long eventId);
 }

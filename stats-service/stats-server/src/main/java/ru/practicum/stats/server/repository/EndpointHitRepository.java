@@ -22,7 +22,7 @@ public interface EndpointHitRepository extends CrudRepository<EndpointHit, Long>
     List<ViewStatsDto> getStatsTotal(@Param("start") LocalDateTime start,
                                      @Param("end") LocalDateTime end,
                                      @Param("uris") List<String> uris,
-                                     @Param("urisNull") boolean urisNull);
+                                     @Param("urisNull") Boolean urisNull);
 
     @Query("""
         SELECT new ru.practicum.stats.dto.ViewStatsDto(e.app, e.uri, COUNT(DISTINCT e.ip))
@@ -35,5 +35,5 @@ public interface EndpointHitRepository extends CrudRepository<EndpointHit, Long>
     List<ViewStatsDto> getStatsUnique(@Param("start") LocalDateTime start,
                                       @Param("end") LocalDateTime end,
                                       @Param("uris") List<String> uris,
-                                      @Param("urisNull") boolean urisNull);
+                                      @Param("urisNull") Boolean urisNull);
 }

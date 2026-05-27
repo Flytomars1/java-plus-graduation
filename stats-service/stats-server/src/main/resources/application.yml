@@ -8,12 +8,3 @@ spring:
       discovery:
         enabled: true
         service-id: config-server
-
-eureka:
-  instance:
-    hostname: localhost
-    preferIpAddress: false
-    instance-id: ${spring.application.name}:${random.value}
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka/

@@ -82,9 +82,6 @@ public class RatingServiceImpl implements RatingService {
 
     @Override
     public RatingDto getEventRating(Long eventId) {
-        if (!Boolean.TRUE.equals(circuitBreakerService.eventExists(eventId))) {
-            throw new NotFoundException("Event not found");
-        }
 
         long likes = ratingRepository.countByEventIdAndIsLikeTrue(eventId);
         long dislikes = ratingRepository.countByEventIdAndIsLikeFalse(eventId);

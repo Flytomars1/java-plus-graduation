@@ -9,5 +9,5 @@ public interface StatsService {
 
     void saveHit(HitDto dto);
 
-    List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique);
+    List<ViewStatsDto> getStats(String start, String end, List<String> uris, Boolean unique);
 }

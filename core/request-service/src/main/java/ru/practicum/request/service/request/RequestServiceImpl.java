@@ -14,6 +14,7 @@ import ru.practicum.request.mapper.RequestMapper;
 import ru.practicum.request.model.ParticipationRequest;
 import ru.practicum.request.model.RequestStatus;
 import ru.practicum.request.repository.RequestRepository;
+import ru.practicum.request.service.request.recommendation.RecommendationGrpcService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class RequestServiceImpl implements RequestService {
 
     private final RequestRepository requestRepository;
     private final RequestCircuitBreakerService circuitBreakerService;
+    private final RecommendationGrpcService recommendationGrpcService;
 
     @Override
     public List<ParticipationRequestDto> getUserRequests(Long userId) {
@@ -104,6 +106,11 @@ public class RequestServiceImpl implements RequestService {
                 .build();
 
         log.info("Creating request: user {} for event {}, status {}", userId, eventId, status);
+
+        if (status == RequestStatus.CONFIRMED) {
+            recommendationGrpcService.sendRegister(userId, eventId);
+        }
+
         return RequestMapper.toDto(requestRepository.save(req));
     }
 
@@ -206,5 +213,11 @@ public class RequestServiceImpl implements RequestService {
                         Function.identity(),
                         eventId -> requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED)
                 ));
+    }
+
+    @Override
+    public boolean hasRequest(Long userId, Long eventId) {
+        log.debug("Checking if user {} has request for event {}", userId, eventId);
+        return requestRepository.existsByRequesterIdAndEventId(userId, eventId);
     }
 }

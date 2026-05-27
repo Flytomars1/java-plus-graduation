@@ -26,7 +26,7 @@ public class RatingInternalController implements RatingInternalApi {
         return ratingService.getEventRating(eventId);
     }
 
-    @PostMapping("/events/batch")
+    @Override
     public Map<Long, RatingDto> getEventRatings(@RequestBody List<Long> eventIds) {
         log.debug("Internal API: get ratings for events: {}", eventIds);
         return ratingService.getEventRatings(eventIds);

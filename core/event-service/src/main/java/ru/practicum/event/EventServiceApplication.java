@@ -11,7 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "ru.practicum.client")
-@ComponentScan(basePackages = {"ru.practicum.event", "ru.practicum.exception", "ru.practicum.stats.client"})
+@ComponentScan(basePackages = {"ru.practicum.event", "ru.practicum.exception", "ru.practicum.stats.client", "ru.practicum.recommendation.client"})
 public class EventServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(EventServiceApplication.class, args);

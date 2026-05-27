@@ -106,6 +106,59 @@ services:
       timeout: 5s
       retries: 5
 
+  recommendation-db:
+    <<: *db-common
+    container_name: recommendation-db
+    environment:
+      POSTGRES_DB: recommendation_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+    ports:
+      - "5436:5432"
+    volumes:
+      - recommendation_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d recommendation_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/confluent-local:7.4.3
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      CLUSTER_ID: 'EWM-2024-KAFKA-CLUSTER'
+    networks:
+      - ewm-network
+
+  kafka-init-topics:
+    image: confluentinc/confluent-local:7.4.3
+    container_name: kafka-init-topics
+    depends_on:
+      - kafka
+    command: "bash -c \
+                'kafka-topics --create --topic stats.user-actions.v1 \
+                             --partitions 3 --replication-factor 1 --if-not-exists \
+                             --bootstrap-server kafka:29092 && \
+                kafka-topics --create --topic stats.events-similarity.v1 \
+                             --partitions 3 --replication-factor 1 --if-not-exists \
+                             --bootstrap-server kafka:29092'"
+    init: true
+    networks:
+      - ewm-network
+
 volumes:
   event_data:
   request_data:
@@ -113,6 +166,7 @@ volumes:
   rating_data:
   stats_data:
   ewm_data:
+  recommendation_data:
 
 networks:
   ewm-network:

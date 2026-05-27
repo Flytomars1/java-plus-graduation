@@ -59,7 +59,7 @@ public class EventMapper {
                 e.getAnnotation(),
                 null,
                 0L,
-                e.getEventDate() != null ? e.getEventDate().format(FORMATTER) : null, // ← ИСПРАВЛЕНО!
+                e.getEventDate() != null ? e.getEventDate().format(FORMATTER) : null,
                 null,
                 e.getPaid(),
                 e.getTitle(),
