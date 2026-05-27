@@ -1,33 +1,27 @@
 package ru.practicum.recommendation.analyzer.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.io.Decoder;
-import org.apache.avro.io.DecoderFactory;
-import org.apache.avro.specific.SpecificDatumReader;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import ru.practicum.recommendation.analyzer.mapper.EventSimilarityMapper;
 import ru.practicum.recommendation.analyzer.model.EventSimilarityEntity;
 import ru.practicum.recommendation.analyzer.repository.EventSimilarityRepository;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
-
-import java.io.IOException;
+import ru.practicum.ewm.stats.avro.EventSimilarityAvroSerializer;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SimilarityConsumer {
 
-    @Autowired
-    private EventSimilarityRepository eventSimilarityRepository;
-
-    @Autowired
-    private EventSimilarityMapper eventSimilarityMapper;
+    private final EventSimilarityRepository eventSimilarityRepository;
+    private final EventSimilarityMapper eventSimilarityMapper;
 
     @KafkaListener(topics = "stats.events-similarity.v1", groupId = "analyzer-group")
     public void consume(byte[] message) {
         try {
-            EventSimilarityAvro similarityAvro = deserialize(message);
+            EventSimilarityAvro similarityAvro = EventSimilarityAvroSerializer.deserialize(message);
             log.debug("Received similarity: eventA={}, eventB={}, score={}",
                     similarityAvro.getEventA(), similarityAvro.getEventB(), similarityAvro.getScore());
 
@@ -45,11 +39,5 @@ public class SimilarityConsumer {
         } catch (Exception e) {
             log.error("Error processing similarity", e);
         }
-    }
-
-    private EventSimilarityAvro deserialize(byte[] data) throws IOException {
-        SpecificDatumReader<EventSimilarityAvro> reader = new SpecificDatumReader<>(EventSimilarityAvro.getClassSchema());
-        Decoder decoder = DecoderFactory.get().binaryDecoder(data, null);
-        return reader.read(null, decoder);
     }
 }

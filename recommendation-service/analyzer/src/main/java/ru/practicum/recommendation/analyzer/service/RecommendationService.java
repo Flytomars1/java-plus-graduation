@@ -1,7 +1,7 @@
 package ru.practicum.recommendation.analyzer.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.recommendation.analyzer.model.EventSimilarityEntity;
 import ru.practicum.recommendation.analyzer.model.UserActionEntity;
@@ -13,15 +13,18 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class RecommendationService {
 
-    @Autowired
-    private UserActionRepository userActionRepository;
-
-    @Autowired
-    private EventSimilarityRepository eventSimilarityRepository;
+    private final UserActionRepository userActionRepository;
+    private final EventSimilarityRepository eventSimilarityRepository;
 
     public List<Map.Entry<Long, Double>> getRecommendationsForUser(Long userId, Integer maxResults) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+        int maxResultsValue = maxResults != null ? maxResults : 10;
+
         List<Long> interactedEventsList = userActionRepository.findEventIdsByUserId(userId);
 
         if (interactedEventsList.isEmpty()) {
@@ -67,11 +70,16 @@ public class RecommendationService {
 
         return recommendations.entrySet().stream()
                 .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
-                .limit(maxResults)
+                .limit(maxResultsValue)
                 .collect(Collectors.toList());
     }
 
     public List<Map.Entry<Long, Double>> getSimilarEvents(Long eventId, Long userId, Integer maxResults) {
+        if (eventId == null || userId == null) {
+            return Collections.emptyList();
+        }
+        int maxResultsValue = maxResults != null ? maxResults : 10;
+
         List<Long> interactedEvents = userActionRepository.findEventIdsByUserId(userId);
         List<EventSimilarityEntity> similarEvents = eventSimilarityRepository.findSimilarEvents(eventId, 0.0);
         Set<Long> interactedSet = new HashSet<>(interactedEvents);
@@ -83,7 +91,7 @@ public class RecommendationService {
                 })
                 .filter(entry -> !interactedSet.contains(entry.getKey()))
                 .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
-                .limit(maxResults)
+                .limit(maxResultsValue)
                 .collect(Collectors.toList());
     }
 

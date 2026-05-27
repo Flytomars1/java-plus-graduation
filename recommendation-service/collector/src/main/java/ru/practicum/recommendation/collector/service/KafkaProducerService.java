@@ -1,9 +1,6 @@
 package ru.practicum.recommendation.collector.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.io.BinaryEncoder;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -11,9 +8,8 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
+import ru.practicum.ewm.stats.avro.UserActionAvroSerializer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Properties;
 
 @Slf4j
@@ -42,7 +38,7 @@ public class KafkaProducerService {
 
     public void sendUserAction(UserActionAvro userAction, Long userId) {
         try {
-            byte[] data = serialize(userAction);
+            byte[] data = UserActionAvroSerializer.serialize(userAction);
             ProducerRecord<Long, byte[]> record = new ProducerRecord<>(topic, userId, data);
 
             kafkaProducer.send(record, (metadata, exception) -> {
@@ -57,14 +53,5 @@ public class KafkaProducerService {
         } catch (Exception e) {
             log.error("Error sending user action", e);
         }
-    }
-
-    private byte[] serialize(UserActionAvro data) throws IOException {
-        SpecificDatumWriter<UserActionAvro> writer = new SpecificDatumWriter<>(UserActionAvro.getClassSchema());
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
-        writer.write(data, encoder);
-        encoder.flush();
-        return out.toByteArray();
     }
 }
